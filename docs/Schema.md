@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS equipment (
     purchase_date TEXT,                             -- 购置日期 yyyy-MM-dd
     price         REAL    DEFAULT 0,                -- 单价
     location      TEXT,                             -- 存放位置
-    status        TEXT    NOT NULL DEFAULT 'available',  -- available/borrowed/repairing/scrapped
+    status        TEXT    NOT NULL DEFAULT 'available',  -- available/borrowed/repairing/scrapped/
     keeper        TEXT,                             -- 责任人
     remark        TEXT
 );
@@ -46,7 +46,6 @@ CREATE INDEX IF NOT EXISTS idx_equipment_asset_no      ON equipment(asset_no);
 CREATE INDEX IF NOT EXISTS idx_borrow_equipment        ON borrow_record(equipment_id);
 CREATE INDEX IF NOT EXISTS idx_maintenance_equipment   ON maintenance_record(equipment_id);
 ```
-
 
 几个 **必须全员达成一致的设计决策** ：
 

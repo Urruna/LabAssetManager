@@ -1,4 +1,4 @@
-#include "databasemanager.h"
+ï»¿#include "databasemanager.h"
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QDebug>
@@ -25,11 +25,11 @@ bool DatabaseManager::open(const QString& dbPath)
     m_db.setDatabaseName(dbPath);
 
     if (!m_db.open()) {
-        qCritical() << "´ò¿ªÊý¾Ý¿âÊ§°Ü:" << m_db.lastError().text();
+        qCritical() << "æ‰“å¼€æ•°æ®åº“å¤±è´¥:" << m_db.lastError().text();
         return false;
     }
 
-    // SQLite Ã¿¸öÁ¬½Ó¶¼ÒªÊÖ¶¯´ò¿ªÍâ¼üÔ¼Êø
+    // SQLite æ¯ä¸ªè¿žæŽ¥éƒ½è¦æ‰‹åŠ¨æ‰“å¼€å¤–é”®çº¦æŸ
     QSqlQuery pragma(m_db);
     pragma.exec("PRAGMA foreign_keys = ON");
 
@@ -89,7 +89,7 @@ bool DatabaseManager::createTables()
     QSqlQuery q(m_db);
     for (const QString& sql : stmts) {
         if (!q.exec(sql)) {
-            qCritical() << "½¨±íÊ§°Ü:" << sql << q.lastError().text();
+            qCritical() << "å»ºè¡¨å¤±è´¥:" << sql << q.lastError().text();
             return false;
         }
     }
