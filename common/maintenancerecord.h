@@ -7,7 +7,8 @@ struct MaintenanceRecord
     int id = -1;
     int equipmentId = -1;
     QString maintenanceDate;
-    QString type; // repair: Î¬ĞŞ, maintain: Î¬±£
+    QString type; // repair: ç»´ä¿®ï¼Œmaintain: ä¿å…»
     QString description;
     double cost = 0.0;
-    QString operatorName; 
+    QString operatorName;
+};

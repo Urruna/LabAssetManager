@@ -8,10 +8,10 @@
 
 ### 📌 基准环境（用于最终测试与验收）
 
-* **操作系统**：Windows 10 / 11 (64-bit)
-* **IDE**：Visual Studio 2022
-* **构建工具**：CMake (>= 3.16)
-* **Qt 版本**：**Qt 6.0.1** (msvc2019_64 套件)
+- **操作系统**：Windows 10 / 11 (64-bit)
+- **IDE**：Visual Studio 2022
+- **构建工具**：CMake (>= 3.16)
+- **Qt 版本**：**Qt 6.0.1** (msvc2019_64 套件)
 
 ### 🤝 环境不一致的妥协方案（务必遵守）
 
@@ -43,16 +43,16 @@
 
 ### ⚠️ 关于中文乱码
 
-如果控制台打印中文变成 `???`，或者编译报错 `C2001 常量中有换行符`，请确保所有包含中文的 `.cpp` 和 `.h` 文件是 **“UTF-8 带签名 (BOM)”** 格式。
+如果控制台打印中文变成 `???`，或者编译报错 `C2001 常量中有换行符`，请确保所有包含中文的 `.cpp` 和 `.h` 文件是 **“UTF-8 带签名 (BOM)”** 格式。  
 *解决办法：用 Windows 记事本打开该文件 -> 另存为 -> 底部编码选择“UTF-8 带签名” -> 覆盖保存。*
 
 ## 4. 团队协作规范
 
 1. **模块解耦** ：`module_*` 之间**禁止**互相 `#include` 对方的头文件。需要通信时，通过 `app/mainwindow` 使用 Qt 的 **信号槽 (Signal & Slot)** 进行中转。
 2. **数据库本地化** ：所有的 `.db` 数据库文件已被 `.gitignore` 排除。每次拉取代码后，程序首次运行会自动在 `C:\Users\用户名\AppData\Roaming\LabAssetManager` 下建库，大家各自测试， **不要把数据库文件提交到 Git** 。
-3. **统一状态词汇** ：数据库中的状态统一使用英文：`available`(在用), `borrowed`(借出), `repairing`(维修), `scrapped`(报废)。界面显示时通过 `enums.h` 转换。
+3. **统一状态词汇** ：数据库中的状态统一使用英文：`available`(在用), `borrowed`(借出), `pending_repair`(待维修), `repairing`(维修), `under_maintenance`(维保), `scrapped`(报废)。界面显示时通过 `enums.h` 转换。
 4. **Git 提交规范** ：
 
-* 每次提交前先 `Pull` 远程代码。
-* Commit 信息尽量清晰，如：`feat(borrow): 完成借出登记功能` 或 `fix(ui): 修复中文乱码问题`。
-* **不要提交用户配置文件** ：如果在 VS 里改了 CMake 路径，VS 可能会生成 `CMakeUserPresets.json` 或 `CMakeSettings.json`，这两个文件已经在 `.gitignore` 里了， **千万别强行提交** ，否则会把别人的环境搞崩。
+- 每次提交前先 `Pull` 远程代码。
+- Commit 信息尽量清晰，如：`feat(borrow): 完成借出登记功能` 或 `fix(ui): 修复中文乱码问题`。
+- **不要提交用户配置文件** ：如果在 VS 里改了 CMake 路径，VS 可能会生成 `CMakeUserPresets.json` 或 `CMakeSettings.json`，这两个文件已经在 `.gitignore` 里了， **千万别强行提交** ，否则会把别人的环境搞崩。
