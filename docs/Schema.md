@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS equipment (
     purchase_date TEXT,                             -- 购置日期 yyyy-MM-dd
     price         REAL    DEFAULT 0,                -- 单价
     location      TEXT,                             -- 存放位置
-    status        TEXT    NOT NULL DEFAULT 'available',  -- available/borrowed/repairing/scrapped/
+    status        TEXT    NOT NULL DEFAULT 'available',  -- available/borrowed/pending_repair/repairing/under_maintenance/scrapped
     keeper        TEXT,                             -- 责任人
     remark        TEXT
 );
@@ -49,10 +49,11 @@ CREATE INDEX IF NOT EXISTS idx_maintenance_equipment   ON maintenance_record(equ
 
 几个 **必须全员达成一致的设计决策** ：
 
-1. **状态值用英文常量还是中文** ：建议存英文（`available`/`borrowed`/`repairing`/`scrapped`），界面显示时用 `QMap<QString, QString>` 映射成中文。好处是代码里比较不会出现中文编码问题，后期也容易加语言。
+1. **状态值用英文常量还是中文** ：建议存英文（`available`/`borrowed`/`pending_repair`/`repairing`/`under_maintenance`/`scrapped`），界面显示时用 `QMap<QString, QString>` 映射成中文。好处是代码里比较不会出现中文编码问题，后期也容易加语言。
 2. **设备“借出”时 `status` 怎么变** ：约定为借出时 `equipment.status` 从 `available` 改为 `borrowed`，归还时改回 `available`。这条规则 B 和 A 必须一致，否则统计页（C）的数字会乱。
 3. **删除设备时关联记录怎么办** ：`borrow_record` 用 `ON DELETE RESTRICT`（有借还记录就不让删设备），`maintenance_record` 用 `ON DELETE CASCADE`（删设备连带删维保记录）。这是业务规则，要提前说清楚。
 4. **日期格式统一** ：全组统一 `"yyyy-MM-dd"`（日期）和 `"yyyy-MM-dd HH:mm:ss"`（时间戳），用 `QDateTime::toString("yyyy-MM-dd HH:mm:ss")` 生成。
+5. **维修保养状态联动** ：新增维修记录时，设备当前必须为 `available`，目标状态为 `pending_repair` 或 `repairing`；新增保养记录时，目标状态为 `under_maintenance`。修改或删除台账记录不联动修改设备当前状态。
 
 ## 验证
 
