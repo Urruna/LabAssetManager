@@ -5,8 +5,6 @@ add_library(module_maintenance STATIC
     maintenancedialog.cpp
     maintenancepository.h
     maintenancepository.cpp
-    statisticspage.h
-    statisticspage.cpp
 )
 
 target_include_directories(module_maintenance

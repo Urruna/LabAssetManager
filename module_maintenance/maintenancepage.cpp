@@ -17,7 +17,7 @@ MaintenancePage::MaintenancePage(QWidget* parent)
     : QWidget(parent)
 {
     setupUi();
-    refresh();
+    refreshData();
 }
 
 void MaintenancePage::setupUi()
@@ -67,11 +67,11 @@ void MaintenancePage::setupUi()
         QOverload<int>::of(&QComboBox::currentIndexChanged),
         this,
         [this](int) {
-            refresh();
+            refreshData();
         });
     connect(m_addButton, &QPushButton::clicked, this, &MaintenancePage::addRecord);
     connect(m_editButton, &QPushButton::clicked, this, &MaintenancePage::editRecord);
-    connect(m_refreshButton, &QPushButton::clicked, this, &MaintenancePage::refresh);
+    connect(m_refreshButton, &QPushButton::clicked, this, &MaintenancePage::refreshData);
     connect(m_table,
         &QTableWidget::itemSelectionChanged,
         this,
@@ -104,7 +104,7 @@ void MaintenancePage::refreshEquipmentFilter()
     m_equipmentFilter->setCurrentIndex(previousIndex >= 0 ? previousIndex : 0);
 }
 
-void MaintenancePage::refresh()
+void MaintenancePage::refreshData()
 {
     refreshEquipmentFilter();
 
@@ -164,7 +164,7 @@ void MaintenancePage::addRecord()
         return;
     }
 
-    refresh();
+    refreshData();
     emit dataChanged();
 }
 
@@ -186,6 +186,6 @@ void MaintenancePage::editRecord()
         return;
     }
 
-    refresh();
+    refreshData();
     emit dataChanged();
 }

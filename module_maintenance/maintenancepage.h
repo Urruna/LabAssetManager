@@ -17,7 +17,7 @@ public:
     explicit MaintenancePage(QWidget* parent = nullptr);
 
 public slots:
-    void refresh();
+    void refreshData();
 
 signals:
     void dataChanged();

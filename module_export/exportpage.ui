@@ -44,6 +44,33 @@
       </widget>
      </item>
      <item>
+      <widget class="QFrame" name="frame_pending_repair">
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::Panel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_pending_repair">
+        <item>
+         <widget class="QLabel" name="label_pending_repair">
+          <property name="text">
+           <string>待维修</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
       <widget class="QFrame" name="frame_3">
        <property name="font">
         <font>
@@ -61,6 +88,33 @@
          <widget class="QLabel" name="label_repairing">
           <property name="text">
            <string>维修中</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QFrame" name="frame_under_maintenance">
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::Panel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Raised</enum>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_under_maintenance">
+        <item>
+         <widget class="QLabel" name="label_under_maintenance">
+          <property name="text">
+           <string>保养中</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>

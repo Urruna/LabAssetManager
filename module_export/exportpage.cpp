@@ -82,7 +82,12 @@ void ExportPage::refreshData()
     QSqlQuery query(DatabaseManager::instance().db());
     query.exec("SELECT status, COUNT(*) FROM equipment GROUP BY status");
 
-    int availableCount = 0, borrowedCount = 0, repairingCount = 0, scrappedCount = 0;
+    int availableCount = 0;
+    int borrowedCount = 0;
+    int pendingRepairCount = 0;
+    int repairingCount = 0;
+    int underMaintenanceCount = 0;
+    int scrappedCount = 0;
 
     while (query.next()) {
         QString status = query.value(0).toString();
@@ -90,13 +95,17 @@ void ExportPage::refreshData()
 
         if (status == "available") availableCount = count;
         else if (status == "borrowed") borrowedCount = count;
+        else if (status == "pending_repair") pendingRepairCount = count;
         else if (status == "repairing") repairingCount = count;
+        else if (status == "under_maintenance") underMaintenanceCount = count;
         else if (status == "scrapped") scrappedCount = count;
     }
 
     // 更新 UI 上的卡片标签（对象名稍后在 UI 里设置）
     ui->label_available->setText(QString("在用设备：%1 台").arg(availableCount));
     ui->label_borrowed->setText(QString("借出设备：%1 台").arg(borrowedCount));
+    ui->label_pending_repair->setText(QString("待维修：%1 台").arg(pendingRepairCount));
     ui->label_repairing->setText(QString("维修中：%1 台").arg(repairingCount));
+    ui->label_under_maintenance->setText(QString("保养中：%1 台").arg(underMaintenanceCount));
     ui->label_scrapped->setText(QString("已报废：%1 台").arg(scrappedCount));
 }
