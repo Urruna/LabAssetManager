@@ -20,4 +20,5 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets Sql)
 
 add_subdirectory(common)
 add_subdirectory(module_maintenance)
-add_subdirectory(app)
+add_subdirectory(module_export)
+add_subdirectory(app))
