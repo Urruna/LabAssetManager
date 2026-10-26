@@ -95,11 +95,11 @@
          <item>
           <widget class="QStackedWidget" name="stackedWidget">
            <property name="currentIndex">
-            <number>3</number>
+            <number>2</number>
            </property>
-           <widget class="QWidget" name="pageEquipment"/>
-           <widget class="QWidget" name="pageBorrow"/>
-           <widget class="QWidget" name="pageMaintenance"/>
+           <widget class="EquipmentPage" name="pageEquipment"/>
+           <widget class="BorrowPage" name="pageBorrow"/>
+           <widget class="MaintenancePage" name="pageMaintenance"/>
            <widget class="ExportPage" name="pageExport"/>
           </widget>
          </item>
@@ -127,6 +127,24 @@
    <class>ExportPage</class>
    <extends>QWidget</extends>
    <header>exportpage.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>EquipmentPage</class>
+   <extends>QWidget</extends>
+   <header>equipmentpage.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>BorrowPage</class>
+   <extends>QWidget</extends>
+   <header>borrowpage.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>MaintenancePage</class>
+   <extends>QWidget</extends>
+   <header>maintenancepage.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

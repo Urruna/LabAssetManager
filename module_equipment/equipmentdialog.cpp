@@ -70,8 +70,10 @@ void EquipmentDialog::setupUi()
     formLayout->addRow("存放位置：", m_locationEdit);
 
     m_statusCombo = new QComboBox(this);
-    for (const QString& status : equipmentStatusValues()) {
-        m_statusCombo->addItem(equipmentStatusText(status), status);
+    for (LabAsset::EquipmentStatus status : LabAsset::allEquipmentStatuses()) {
+        m_statusCombo->addItem(
+            LabAsset::statusToDisplay(status),
+            static_cast<int>(status));
     }
     formLayout->addRow("设备状态：", m_statusCombo);
 
@@ -122,7 +124,8 @@ void EquipmentDialog::setEquipment(const Equipment& equipment)
     m_priceSpin->setValue(equipment.price);
     m_locationEdit->setText(equipment.location);
 
-    const int statusIndex = m_statusCombo->findData(equipment.status);
+    const int statusIndex = m_statusCombo->findData(
+        static_cast<int>(equipment.status));
     if (statusIndex >= 0) {
         m_statusCombo->setCurrentIndex(statusIndex);
     }
@@ -143,7 +146,8 @@ Equipment EquipmentDialog::equipment() const
         m_purchaseDateEdit->date().toString("yyyy-MM-dd");
     result.price = m_priceSpin->value();
     result.location = m_locationEdit->text().trimmed();
-    result.status = m_statusCombo->currentData().toString();
+    result.status = static_cast<LabAsset::EquipmentStatus>(
+        m_statusCombo->currentData().toInt());
     result.keeper = m_keeperEdit->text().trimmed();
     result.remark = m_remarkEdit->toPlainText().trimmed();
     return result;

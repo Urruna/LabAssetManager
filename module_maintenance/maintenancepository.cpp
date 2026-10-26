@@ -6,6 +6,7 @@
 #include <QSqlError>
 #include <QVariant>
 #include <QDebug>
+#include "enums.h"
 #include "maintenancepository.h"
 
 MaintenancePository::MaintenancePository(QSqlDatabase database)
@@ -134,7 +135,7 @@ MaintenancePository::findEquipmentOptions(bool availableOnly) const
 
     QString sql = "SELECT id, asset_no, name FROM equipment ";
     if (availableOnly) {
-        sql += "WHERE status = 'available' ";
+        sql += "WHERE status = :available_status ";
     }
     sql += "ORDER BY asset_no ASC";
 
@@ -143,6 +144,12 @@ MaintenancePository::findEquipmentOptions(bool availableOnly) const
         m_lastError = "准备查询设备列表失败: " + query.lastError().text();
         qDebug() << "SQL Prepare Error:" << m_lastError;
         return options;
+    }
+
+    if (availableOnly) {
+        query.bindValue(
+            ":available_status",
+            LabAsset::statusToDb(LabAsset::EquipmentStatus::Available));
     }
 
     if (!query.exec()) {
@@ -192,7 +199,9 @@ QMap<QString, int> MaintenancePository::countEquipmentByStatus() const
     return counts;
 }
 
-bool MaintenancePository::add(MaintenanceRecord& record, const QString& equipmentStatus)
+bool MaintenancePository::add(
+    MaintenanceRecord& record,
+    LabAsset::EquipmentStatus equipmentStatus)
 {
     m_lastError.clear();
 
@@ -212,11 +221,12 @@ bool MaintenancePository::add(MaintenanceRecord& record, const QString& equipmen
 
     if (record.type == "repair") {
         validTargetStatus =
-            equipmentStatus == "pending_repair" ||
-            equipmentStatus == "repairing";
+            equipmentStatus == LabAsset::EquipmentStatus::PendingRepair ||
+            equipmentStatus == LabAsset::EquipmentStatus::Repairing;
     }
     else if (record.type == "maintain") {
-        validTargetStatus = equipmentStatus == "under_maintenance";
+        validTargetStatus =
+            equipmentStatus == LabAsset::EquipmentStatus::Maintaining;
     }
 
     if (!validTargetStatus) {
@@ -238,10 +248,15 @@ bool MaintenancePository::add(MaintenanceRecord& record, const QString& equipmen
     updateQuery.prepare(
         "UPDATE equipment "
         "SET status = :target_status "
-        "WHERE id = :equipment_id AND status = 'available'");
+        "WHERE id = :equipment_id AND status = :available_status");
 
-    updateQuery.bindValue(":target_status", equipmentStatus);
+    updateQuery.bindValue(
+        ":target_status",
+        LabAsset::statusToDb(equipmentStatus));
     updateQuery.bindValue(":equipment_id", record.equipmentId);
+    updateQuery.bindValue(
+        ":available_status",
+        LabAsset::statusToDb(LabAsset::EquipmentStatus::Available));
 
     if (!updateQuery.exec()) {
         m_lastError =

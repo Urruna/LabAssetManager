@@ -2,6 +2,7 @@
 
 #include <QDialog>
 #include <QString>
+#include "enums.h"
 #include "maintenancepository.h"
 
 class QComboBox;
@@ -21,7 +22,7 @@ public:
     MaintenanceDialog(const MaintenanceRecord& record, QWidget* parent = nullptr);
 
     MaintenanceRecord record() const;
-    QString equipmentStatus() const;
+    LabAsset::EquipmentStatus equipmentStatus() const;
 
 protected:
     void accept() override;

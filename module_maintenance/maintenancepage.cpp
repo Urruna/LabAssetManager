@@ -12,6 +12,9 @@
 #include <QVBoxLayout>
 #include "maintenancedialog.h"
 #include "maintenancepage.h"
+#include "csvexporter.h"  
+#include <QFileDialog>   
+#include <QDate>    
 
 MaintenancePage::MaintenancePage(QWidget* parent)
     : QWidget(parent)
@@ -36,6 +39,7 @@ void MaintenancePage::setupUi()
     m_addButton = new QPushButton("新增记录", this);
     m_editButton = new QPushButton("编辑记录", this);
     m_refreshButton = new QPushButton("刷新", this);
+    m_exportButton = new QPushButton("导出", this);
     m_editButton->setEnabled(false);
 
     toolLayout->addWidget(filterLabel);
@@ -60,8 +64,15 @@ void MaintenancePage::setupUi()
     m_table->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Stretch);
     rootLayout->addWidget(m_table, 1);
 
+    QHBoxLayout* bottomLayout = new QHBoxLayout();
+
     m_statusLabel = new QLabel(this);
-    rootLayout->addWidget(m_statusLabel);
+    bottomLayout->addWidget(m_statusLabel);
+
+    bottomLayout->addStretch(); 
+    bottomLayout->addWidget(m_exportButton); 
+
+    rootLayout->addLayout(bottomLayout);
 
     connect(m_equipmentFilter,
         QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -84,6 +95,7 @@ void MaintenancePage::setupUi()
         [this](int, int) {
             editRecord();
         });
+    connect(m_exportButton, &QPushButton::clicked, this, &MaintenancePage::exportData);
 }
 
 void MaintenancePage::refreshEquipmentFilter()
@@ -188,4 +200,30 @@ void MaintenancePage::editRecord()
 
     refreshData();
     emit dataChanged();
+}
+
+void MaintenancePage::exportData()
+{
+    // 1. 判断当前是否有数据
+    if (m_records.isEmpty()) {
+        QMessageBox::information(this, "提示", "当前表格没有可导出的数据！");
+        return;
+    }
+
+    // 2. 获取当前表格的模型（QTableWidget 也可以作为模型传进去）
+    QAbstractItemModel* currentModel = m_table->model();
+
+    // 3. 弹出保存对话框
+    QString defaultFileName = QString("维保记录检索结果_%1.csv").arg(QDate::currentDate().toString("yyyyMMdd"));
+    QString filePath = QFileDialog::getSaveFileName(this, "导出数据", defaultFileName, "CSV Files (*.csv)");
+
+    if (filePath.isEmpty()) return; // 用户取消了保存
+
+    // 4. 调用你写的通用导出工具
+    if (CsvExporter::exportToCsv(currentModel, filePath)) {
+        QMessageBox::information(this, "成功", "数据已成功导出！");
+    }
+    else {
+        QMessageBox::critical(this, "失败", "导出失败，请检查文件是否被占用。");
+    }
 }

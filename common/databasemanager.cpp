@@ -1,4 +1,5 @@
 ﻿#include "databasemanager.h"
+#include "enums.h"
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QDebug>
@@ -93,5 +94,49 @@ bool DatabaseManager::createTables()
             return false;
         }
     }
+
+    // 兼容旧数据库中的状态值；这些迁移语句可重复执行。
+    QSqlQuery migration(m_db);
+    if (!migration.prepare(
+            "UPDATE equipment SET status = :new_status "
+            "WHERE status = :old_status")) {
+        qCritical() << "准备状态迁移失败:" << migration.lastError().text();
+        return false;
+    }
+
+    const struct {
+        const char* oldStatus;
+        LabAsset::EquipmentStatus newStatus;
+    } statusMigrations[] = {
+        {"under_maintenance", LabAsset::EquipmentStatus::Maintaining},
+        {"damaged", LabAsset::EquipmentStatus::PendingRepair}
+    };
+
+    if (!m_db.transaction()) {
+        qCritical() << "无法开始状态迁移事务:" << m_db.lastError().text();
+        return false;
+    }
+
+    for (const auto& item : statusMigrations) {
+        migration.bindValue(":old_status", item.oldStatus);
+        migration.bindValue(
+            ":new_status",
+            LabAsset::statusToDb(item.newStatus));
+        if (!migration.exec()) {
+            qCritical()
+                << "迁移设备状态失败:"
+                << item.oldStatus
+                << migration.lastError().text();
+            m_db.rollback();
+            return false;
+        }
+    }
+
+    if (!m_db.commit()) {
+        qCritical() << "提交状态迁移失败:" << m_db.lastError().text();
+        m_db.rollback();
+        return false;
+    }
+
     return true;
 }

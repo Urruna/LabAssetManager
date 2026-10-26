@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>820</width>
-    <height>600</height>
+    <height>587</height>
    </rect>
   </property>
   <property name="font">
@@ -38,7 +38,6 @@
       <font>
        <family>微软雅黑</family>
        <pointsize>16</pointsize>
-       <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
@@ -127,6 +126,9 @@
    </item>
    <item>
     <widget class="QTableView" name="tableView">
+     <property name="sizeAdjustPolicy">
+      <enum>QAbstractScrollArea::AdjustIgnored</enum>
+     </property>
      <property name="alternatingRowColors">
       <bool>true</bool>
      </property>
@@ -138,9 +140,6 @@
      </property>
      <property name="sortingEnabled">
       <bool>true</bool>
-     </property>
-     <property name="sizeAdjustPolicy">
-      <enum>QAbstractScrollArea::AdjustIgnored</enum>
      </property>
      <attribute name="horizontalHeaderStretchLastSection">
       <bool>false</bool>
@@ -171,6 +170,13 @@
         </size>
        </property>
       </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_export_equipment">
+       <property name="text">
+        <string>导出</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>

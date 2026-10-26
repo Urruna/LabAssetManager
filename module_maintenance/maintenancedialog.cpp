@@ -122,11 +122,17 @@ void MaintenanceDialog::updateStatusOptions()
 
     QString type = m_typeCombo->currentData().toString();
     if (type == "repair") {
-        m_statusCombo->addItem("待维修", "pending_repair");
-        m_statusCombo->addItem("维修中", "repairing");
+        m_statusCombo->addItem(
+            LabAsset::statusToDisplay(LabAsset::EquipmentStatus::PendingRepair),
+            static_cast<int>(LabAsset::EquipmentStatus::PendingRepair));
+        m_statusCombo->addItem(
+            LabAsset::statusToDisplay(LabAsset::EquipmentStatus::Repairing),
+            static_cast<int>(LabAsset::EquipmentStatus::Repairing));
     }
     else {
-        m_statusCombo->addItem("保养中", "under_maintenance");
+        m_statusCombo->addItem(
+            LabAsset::statusToDisplay(LabAsset::EquipmentStatus::Maintaining),
+            static_cast<int>(LabAsset::EquipmentStatus::Maintaining));
     }
 
     // 编辑台账只修正历史数据，不重新驱动设备当前状态。
@@ -174,9 +180,10 @@ MaintenanceRecord MaintenanceDialog::record() const
     return result;
 }
 
-QString MaintenanceDialog::equipmentStatus() const
+LabAsset::EquipmentStatus MaintenanceDialog::equipmentStatus() const
 {
-    return m_statusCombo->currentData().toString();
+    return static_cast<LabAsset::EquipmentStatus>(
+        m_statusCombo->currentData().toInt());
 }
 
 void MaintenanceDialog::accept()

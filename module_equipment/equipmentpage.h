@@ -30,6 +30,7 @@ private slots:
     void addEquipment();
     void editEquipment();
     void deleteEquipment();
+    void on_btn_export_equipment_clicked();
 
 private:
     void setupTable();

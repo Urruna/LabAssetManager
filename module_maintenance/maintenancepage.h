@@ -25,6 +25,7 @@ signals:
 private slots:
     void addRecord();
     void editRecord();
+    void exportData();
 
 private:
     void setupUi();
@@ -40,4 +41,5 @@ private:
     QPushButton* m_refreshButton = nullptr;
     QTableWidget* m_table = nullptr;
     QLabel* m_statusLabel = nullptr;
+    QPushButton* m_exportButton = nullptr;
 };

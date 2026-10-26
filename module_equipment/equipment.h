@@ -1,7 +1,8 @@
 #pragma once
 
 #include <QString>
-#include <QStringList>
+
+#include "enums.h"
 
 struct Equipment
 {
@@ -13,11 +14,8 @@ struct Equipment
     QString purchaseDate;
     double price = 0.0;
     QString location;
-    QString status = "available";
+    LabAsset::EquipmentStatus status = LabAsset::EquipmentStatus::Available;
     QString keeper;
     QString remark;
 };
 
-// 状态值统一使用数据库中的英文常量，界面只展示中文文本。
-const QStringList& equipmentStatusValues();
-QString equipmentStatusText(const QString& status);

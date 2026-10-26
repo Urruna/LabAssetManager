@@ -2,8 +2,6 @@ add_library(module_export STATIC
     exportpage.h
     exportpage.cpp
     exportpage.ui
-    csvexporter.h
-    csvexporter.cpp
  "test_main.cpp")
 
 # 把自己的目录暴露出去，这样队友才能 #include "csvexporter.h"

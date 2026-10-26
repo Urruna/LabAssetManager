@@ -23,7 +23,7 @@ module_maintenance
 1. **新增维修保养记录**
    - 只允许选择当前状态为 `available` 的设备。
    - 维修记录的目标状态为 `pending_repair` 或 `repairing`。
-   - 保养记录的目标状态为 `under_maintenance`。
+   - 保养记录的目标状态为 `maintaining`。
    - 维保记录插入和设备状态更新在同一个数据库事务中完成。
 2. **维修保养台账**
    - 联表显示设备编号、设备名称、日期、类型、说明、费用和经办人。
@@ -145,13 +145,13 @@ connect(ui->pageMaintenance,
 - [ ] 主窗口可以显示 `MaintenancePage`，点击“维修记录”能切换页面。
 - [ ] 新增对话框只列出 `available` 设备。
 - [ ] 新增维修记录后，设备状态变为 `pending_repair` 或 `repairing`。
-- [ ] 新增保养记录后，设备状态变为 `under_maintenance`。
+- [ ] 新增保养记录后，设备状态变为 `maintaining`。
 - [ ] 已借出、维修中或报废的设备不会出现在新增设备下拉框中。
 - [ ] 台账能显示设备名称、日期、类型、费用和说明。
 - [ ] 编辑台账后设备当前状态不发生变化。
 - [ ] 维保页刷新不会崩溃，空台账可以正常显示。
 - [ ] 新增或编辑后，`ExportPage` 的状态卡片同步刷新。
-- [ ] 状态统计包含 `pending_repair` 和 `under_maintenance`。
+- [ ] 状态统计包含 `pending_repair` 和 `maintaining`。
 
 ## 当前状态
 

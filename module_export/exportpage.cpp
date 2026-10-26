@@ -2,12 +2,16 @@
 #include "ui_exportpage.h"
 #include "csvexporter.h"
 #include "databasemanager.h"
+#include "enums.h"
 
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QFileDialog>
+#include <QFont>
+#include <QMap>
 #include <QMessageBox>
 #include <QSqlQueryModel>
+#include <QStandardItemModel>
 #include <QDate>
 
 // 这是一个内部辅助函数，用来处理保存对话框和导出
@@ -82,30 +86,108 @@ void ExportPage::refreshData()
     QSqlQuery query(DatabaseManager::instance().db());
     query.exec("SELECT status, COUNT(*) FROM equipment GROUP BY status");
 
-    int availableCount = 0;
-    int borrowedCount = 0;
-    int pendingRepairCount = 0;
-    int repairingCount = 0;
-    int underMaintenanceCount = 0;
-    int scrappedCount = 0;
-
-    while (query.next()) {
-        QString status = query.value(0).toString();
-        int count = query.value(1).toInt();
-
-        if (status == "available") availableCount = count;
-        else if (status == "borrowed") borrowedCount = count;
-        else if (status == "pending_repair") pendingRepairCount = count;
-        else if (status == "repairing") repairingCount = count;
-        else if (status == "under_maintenance") underMaintenanceCount = count;
-        else if (status == "scrapped") scrappedCount = count;
+    QMap<int, int> statusCounts;
+    for (LabAsset::EquipmentStatus status :
+         LabAsset::allEquipmentStatuses()) {
+        statusCounts.insert(static_cast<int>(status), 0);
     }
 
-    // 更新 UI 上的卡片标签（对象名稍后在 UI 里设置）
-    ui->label_available->setText(QString("在用设备：%1 台").arg(availableCount));
-    ui->label_borrowed->setText(QString("借出设备：%1 台").arg(borrowedCount));
-    ui->label_pending_repair->setText(QString("待维修：%1 台").arg(pendingRepairCount));
-    ui->label_repairing->setText(QString("维修中：%1 台").arg(repairingCount));
-    ui->label_under_maintenance->setText(QString("保养中：%1 台").arg(underMaintenanceCount));
-    ui->label_scrapped->setText(QString("已报废：%1 台").arg(scrappedCount));
+    int total = 0;
+
+    while (query.next()) {
+        const QString rawStatus = query.value(0).toString();
+        const auto status = LabAsset::statusFromDb(rawStatus);
+        if (!status) {
+            continue;
+        }
+
+        const int count = query.value(1).toInt();
+        total += count;
+        statusCounts[static_cast<int>(*status)] = count;
+    }
+
+    auto countFor = [&statusCounts](LabAsset::EquipmentStatus status) {
+        return statusCounts.value(static_cast<int>(status), 0);
+    };
+
+    auto calcPercent = [total](int count) -> QString {
+        if (total == 0) return "0.0%";
+        double p = (double)count / total * 100.0;
+        return QString::number(p, 'f', 1) + "%";
+        };
+
+    // 更新 UI 上的卡片标签
+    ui->label_available->setText(
+        QString("在用设备：%1 台")
+            .arg(countFor(LabAsset::EquipmentStatus::Available)));
+    ui->label_borrowed->setText(
+        QString("借出设备：%1 台")
+            .arg(countFor(LabAsset::EquipmentStatus::Borrowed)));
+    ui->label_pending_repair->setText(
+        QString("待维修：%1 台")
+            .arg(countFor(LabAsset::EquipmentStatus::PendingRepair)));
+    ui->label_repairing->setText(
+        QString("维修中：%1 台")
+            .arg(countFor(LabAsset::EquipmentStatus::Repairing)));
+    ui->label_under_maintenance->setText(
+        QString("保养中：%1 台")
+            .arg(countFor(LabAsset::EquipmentStatus::Maintaining)));
+    ui->label_scrapped->setText(
+        QString("已报废：%1 台")
+            .arg(countFor(LabAsset::EquipmentStatus::Scrapped)));
+
+    // 2. 更新中间的 tableView
+    QStandardItemModel* model = new QStandardItemModel(this);
+    model->setHorizontalHeaderLabels({ "设备状态", "数量 (台)", "占比" });
+
+    // 辅助插入行的 Lambda 函数
+    auto addRow = [model](QString statusName, int count, QString percent) {
+        QList<QStandardItem*> row;
+        QStandardItem* itemStatus = new QStandardItem(statusName);
+        QStandardItem* itemCount = new QStandardItem(QString::number(count));
+        QStandardItem* itemPercent = new QStandardItem(percent);
+
+        // 居中对齐
+        itemStatus->setTextAlignment(Qt::AlignCenter);
+        itemCount->setTextAlignment(Qt::AlignCenter);
+        itemPercent->setTextAlignment(Qt::AlignCenter);
+
+        row << itemStatus << itemCount << itemPercent;
+        model->appendRow(row);
+        };
+
+    for (LabAsset::EquipmentStatus status :
+         LabAsset::allEquipmentStatuses()) {
+        const int count = countFor(status);
+        addRow(
+            LabAsset::statusToDisplay(status),
+            count,
+            calcPercent(count));
+    }
+
+    // 插入合计行
+    QList<QStandardItem*> totalRow;
+    QStandardItem* itemTotal = new QStandardItem("总计");
+    QStandardItem* itemTotalCount = new QStandardItem(QString::number(total));
+    QStandardItem* itemTotalPercent = new QStandardItem("100%");
+    itemTotal->setTextAlignment(Qt::AlignCenter);
+    itemTotalCount->setTextAlignment(Qt::AlignCenter);
+    itemTotalPercent->setTextAlignment(Qt::AlignCenter);
+    // 让合计行的字体加粗
+    QFont boldFont;
+    boldFont.setBold(true);
+    itemTotal->setFont(boldFont);
+    itemTotalCount->setFont(boldFont);
+    itemTotalPercent->setFont(boldFont);
+    totalRow << itemTotal << itemTotalCount << itemTotalPercent;
+    model->appendRow(totalRow);
+
+    // 把模型绑定到 UI 里的 tableView
+    ui->tableView->setModel(model);
+
+    // 美化表格：让表头自适应宽度，隐藏左侧行号
+    ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->tableView->verticalHeader()->setVisible(false);
+    ui->tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 }

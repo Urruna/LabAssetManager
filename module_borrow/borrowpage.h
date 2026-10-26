@@ -27,6 +27,7 @@ private slots:
 	void on_btn_search_clicked();
 	void on_btn_borrow_clicked();
 	void on_btn_return_clicked();
+	void on_btn_export_borrow_clicked();
 
 private:
     Ui::BorrowPage *ui;

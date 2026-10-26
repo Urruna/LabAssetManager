@@ -1,5 +1,6 @@
 ﻿#include "borrowdialog.h"
 #include "databasemanager.h"
+#include "enums.h"
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QVariant>
@@ -18,18 +19,34 @@ BorrowDialog::BorrowDialog(QWidget *parent):QDialog(parent)
 	connect(ui.buttonBox, &QDialogButtonBox::rejected,this,&QDialog::reject);
 
 	QSqlQuery equipmentQuery(DatabaseManager::instance().db());
-	if (!equipmentQuery.exec(
+	if (!equipmentQuery.prepare(
 		"SELECT e.id, e.asset_no, e.name "
 		"FROM equipment e "
-		"WHERE e.status = 'available' "
+		"WHERE e.status = :availableStatus "
 		"AND NOT EXISTS ("
 		"SELECT 1 FROM borrow_record b "
 		"WHERE b.equipment_id = e.id "
-		"AND (b.status = 'borrowed' OR b.actual_return_time IS NULL)"
+		"AND (b.status = :borrowedStatus OR b.actual_return_time IS NULL)"
 		") "
-		"ORDER BY e.asset_no")){
+		"ORDER BY e.asset_no")) {
 		ui.buttonBox->button(QDialogButtonBox::Ok)->setEnabled(false);
 		QMessageBox::warning(this,QString::fromUtf8("读取设备失败"),equipmentQuery.lastError().text());
+		return;
+	}
+
+	equipmentQuery.bindValue(
+		":availableStatus",
+		LabAsset::statusToDb(LabAsset::EquipmentStatus::Available));
+	equipmentQuery.bindValue(
+		":borrowedStatus",
+		LabAsset::statusToDb(LabAsset::EquipmentStatus::Borrowed));
+
+	if (!equipmentQuery.exec()) {
+		ui.buttonBox->button(QDialogButtonBox::Ok)->setEnabled(false);
+		QMessageBox::warning(
+			this,
+			QString::fromUtf8("读取设备失败"),
+			equipmentQuery.lastError().text());
 		return;
 	}
 
@@ -118,16 +135,22 @@ void BorrowDialog::accept()
 	QSqlQuery borrowQuery(db);
 
 	borrowQuery.prepare(
-		"UPDATE equipment SET status = 'borrowed' "
-		"WHERE id = :equipmentId AND status = 'available' "
+		"UPDATE equipment SET status = :borrowedStatus "
+		"WHERE id = :equipmentId AND status = :availableStatus "
 		"AND NOT EXISTS ("
 		"SELECT 1 FROM borrow_record b "
 		"WHERE b.equipment_id = equipment.id "
-		"AND (b.status = 'borrowed' OR b.actual_return_time IS NULL)"
+		"AND (b.status = :borrowedStatus OR b.actual_return_time IS NULL)"
 		")"
 	);
 
 	borrowQuery.bindValue(":equipmentId", equipmentId());
+	borrowQuery.bindValue(
+		":borrowedStatus",
+		LabAsset::statusToDb(LabAsset::EquipmentStatus::Borrowed));
+	borrowQuery.bindValue(
+		":availableStatus",
+		LabAsset::statusToDb(LabAsset::EquipmentStatus::Available));
 
 	if (!borrowQuery.exec())
 	{
@@ -156,12 +179,15 @@ void BorrowDialog::accept()
 		"actual_return_time, status, remark) "
 		"VALUES("
 		":equipmentId, :borrower, :borrowTime, :expectedreturnTime, "
-		"NULL, 'borrowed', :remark)"
+		"NULL, :borrowedStatus, :remark)"
 	);
 	borrowQuery.bindValue(":equipmentId",equipmentId());
 	borrowQuery.bindValue(":borrower",borrower());
 	borrowQuery.bindValue(":borrowTime",borrowTime().toString("yyyy-MM-dd HH:mm:ss"));
 	borrowQuery.bindValue(":expectedreturnTime",expectedreturnTime().toString("yyyy-MM-dd HH:mm:ss"));
+	borrowQuery.bindValue(
+		":borrowedStatus",
+		LabAsset::statusToDb(LabAsset::EquipmentStatus::Borrowed));
 	borrowQuery.bindValue(":remark", remark());
 
 	if (!borrowQuery.exec())

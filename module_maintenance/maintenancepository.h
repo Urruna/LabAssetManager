@@ -4,6 +4,7 @@
 #include <QMap>
 #include <QSqlDatabase>
 #include <QString>
+#include "enums.h"
 #include "maintenancerecord.h"
 
 struct MaintenanceEquipmentOption
@@ -32,7 +33,9 @@ public:
         bool availableOnly = false) const;
     QMap<QString, int> countEquipmentByStatus() const;
 
-    bool add(MaintenanceRecord& record, const QString& equipmentStatus);
+    bool add(
+        MaintenanceRecord& record,
+        LabAsset::EquipmentStatus equipmentStatus);
     bool update(const MaintenanceRecord& record);
     bool remove(int id);
 

@@ -4,7 +4,7 @@ add_executable(LabAssetManager
     mainwindow.cpp
     mainwindow.ui   
 )
-target_link_libraries(LabAssetManager PRIVATE common module_export Qt6::Widgets Qt6::Sql)
+target_link_libraries(LabAssetManager PRIVATE common module_export module_borrow module_maintenance module_equipment Qt6::Widgets Qt6::Sql)
 
 # 将所需dll复制到exe所在目录
 add_custom_command(TARGET LabAssetManager POST_BUILD

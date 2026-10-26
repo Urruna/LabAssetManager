@@ -4,6 +4,7 @@
 #include <QSqlQuery>
 #include <QVariant>
 
+#include <algorithm>
 #include <cmath>
 
 namespace {
@@ -16,9 +17,11 @@ QString escapeLikePattern(QString text)
     return text;
 }
 
-Equipment equipmentFromQuery(const QSqlQuery& query)
+bool equipmentFromQuery(
+    const QSqlQuery& query,
+    Equipment& equipment,
+    QString& error)
 {
-    Equipment equipment;
     equipment.id = query.value(0).toInt();
     equipment.assetNo = query.value(1).toString();
     equipment.name = query.value(2).toString();
@@ -27,10 +30,17 @@ Equipment equipmentFromQuery(const QSqlQuery& query)
     equipment.purchaseDate = query.value(5).toString();
     equipment.price = query.value(6).toDouble();
     equipment.location = query.value(7).toString();
-    equipment.status = query.value(8).toString();
+    const QString rawStatus = query.value(8).toString();
+    const auto parsedStatus = LabAsset::statusFromDb(rawStatus);
+    if (!parsedStatus) {
+        error = QString("设备“%1”的状态无效：%2")
+                    .arg(equipment.assetNo, rawStatus);
+        return false;
+    }
+    equipment.status = *parsedStatus;
     equipment.keeper = query.value(9).toString();
     equipment.remark = query.value(10).toString();
-    return equipment;
+    return true;
 }
 
 } // namespace
@@ -42,7 +52,7 @@ EquipmentRepository::EquipmentRepository(QSqlDatabase database)
 
 QList<Equipment> EquipmentRepository::find(
     const QString& keyword,
-    const QString& status) const
+    std::optional<LabAsset::EquipmentStatus> status) const
 {
     m_lastError.clear();
     QList<Equipment> result;
@@ -60,8 +70,7 @@ QList<Equipment> EquipmentRepository::find(
             "OR name LIKE :keyword ESCAPE '\\')");
     }
 
-    const QString trimmedStatus = status.trimmed();
-    if (!trimmedStatus.isEmpty()) {
+    if (status.has_value()) {
         conditions.append("status = :status");
     }
 
@@ -81,8 +90,10 @@ QList<Equipment> EquipmentRepository::find(
             "%" + escapeLikePattern(trimmedKeyword) + "%";
         query.bindValue(":keyword", pattern);
     }
-    if (!trimmedStatus.isEmpty()) {
-        query.bindValue(":status", trimmedStatus);
+    if (status.has_value()) {
+        query.bindValue(
+            ":status",
+            LabAsset::statusToDb(*status));
     }
 
     if (!query.exec()) {
@@ -91,7 +102,13 @@ QList<Equipment> EquipmentRepository::find(
     }
 
     while (query.next()) {
-        result.append(equipmentFromQuery(query));
+        Equipment equipment;
+        QString error;
+        if (!equipmentFromQuery(query, equipment, error)) {
+            m_lastError = error;
+            return {};
+        }
+        result.append(equipment);
     }
     return result;
 }
@@ -156,7 +173,9 @@ bool EquipmentRepository::add(Equipment& equipment)
     query.bindValue(":purchase_date", equipment.purchaseDate);
     query.bindValue(":price", equipment.price);
     query.bindValue(":location", equipment.location);
-    query.bindValue(":status", equipment.status);
+    query.bindValue(
+        ":status",
+        LabAsset::statusToDb(equipment.status));
     query.bindValue(":keeper", equipment.keeper);
     query.bindValue(":remark", equipment.remark);
 
@@ -213,7 +232,9 @@ bool EquipmentRepository::update(Equipment& equipment)
     query.bindValue(":purchase_date", equipment.purchaseDate);
     query.bindValue(":price", equipment.price);
     query.bindValue(":location", equipment.location);
-    query.bindValue(":status", equipment.status);
+    query.bindValue(
+        ":status",
+        LabAsset::statusToDb(equipment.status));
     query.bindValue(":keeper", equipment.keeper);
     query.bindValue(":remark", equipment.remark);
     query.bindValue(":id", equipment.id);
@@ -244,9 +265,8 @@ bool EquipmentRepository::remove(int id)
         return false;
     }
 
-    bool statusLoaded = false;
-    const QString currentStatus = equipmentStatus(id, &statusLoaded);
-    if (!statusLoaded) {
+    LabAsset::EquipmentStatus currentStatus;
+    if (!equipmentStatus(id, currentStatus)) {
         if (m_lastError.isEmpty()) {
             m_lastError = "未找到对应设备，记录可能已被删除";
         }
@@ -254,10 +274,10 @@ bool EquipmentRepository::remove(int id)
     }
 
     // 非在用设备可能正在借出、维修或保养，先按业务状态拒绝删除。
-    if (currentStatus != "available") {
+    if (currentStatus != LabAsset::EquipmentStatus::Available) {
         m_lastError = QString(
             "该设备当前为“%1”，存在关联流程，无法删除")
-            .arg(equipmentStatusText(currentStatus));
+            .arg(LabAsset::statusToDisplay(currentStatus));
         return false;
     }
 
@@ -315,30 +335,42 @@ bool EquipmentRepository::validate(Equipment& equipment)
         m_lastError = "价格必须是合法的非负数字";
         return false;
     }
-    if (!equipmentStatusValues().contains(equipment.status)) {
+    const auto& statuses = LabAsset::allEquipmentStatuses();
+    if (std::find(
+            statuses.cbegin(),
+            statuses.cend(),
+            equipment.status) == statuses.cend()) {
         m_lastError = "设备状态无效";
         return false;
     }
     return true;
 }
 
-QString EquipmentRepository::equipmentStatus(int id, bool* ok) const
+bool EquipmentRepository::equipmentStatus(
+    int id,
+    LabAsset::EquipmentStatus& status) const
 {
-    *ok = false;
     QSqlQuery query(m_db);
     if (!query.prepare("SELECT status FROM equipment WHERE id = :id")) {
         m_lastError = "准备读取设备状态失败：" + query.lastError().text();
-        return QString();
+        return false;
     }
     query.bindValue(":id", id);
     if (!query.exec()) {
         m_lastError = "读取设备状态失败：" + query.lastError().text();
-        return QString();
+        return false;
     }
     if (!query.next()) {
-        return QString();
+        return false;
     }
 
-    *ok = true;
-    return query.value(0).toString();
+    const QString rawStatus = query.value(0).toString();
+    const auto parsedStatus = LabAsset::statusFromDb(rawStatus);
+    if (!parsedStatus) {
+        m_lastError = "设备状态无效：" + rawStatus;
+        return false;
+    }
+
+    status = *parsedStatus;
+    return true;
 }

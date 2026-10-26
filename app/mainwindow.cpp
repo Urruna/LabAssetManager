@@ -1,5 +1,8 @@
 ﻿#include "mainwindow.h"
 #include "ui_mainwindow.h" // 注意这里是 ui_ 开头，对应 .ui 文件
+#include "equipmentpage.h"
+#include "borrowpage.h"
+#include "maintenancepage.h"
 #include "exportpage.h"
 
 MainWindow::MainWindow(QWidget* parent)
@@ -7,6 +10,24 @@ MainWindow::MainWindow(QWidget* parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    // 1. 设备管理
+    connect(ui->btnEquipment, &QPushButton::clicked, this, [=]() {
+        ui->stackedWidget->setCurrentWidget(ui->pageEquipment);
+        qobject_cast<EquipmentPage*>(ui->pageEquipment)->refreshData();
+        });
+
+    // 2. 借还记录
+    connect(ui->btnBorrow, &QPushButton::clicked, this, [=]() {
+        ui->stackedWidget->setCurrentWidget(ui->pageBorrow);
+        qobject_cast<BorrowPage*>(ui->pageBorrow)->refreshData();
+        });
+
+    // 3. 维保记录
+    connect(ui->btnMaintenance, &QPushButton::clicked, this, [=]() {
+        ui->stackedWidget->setCurrentWidget(ui->pageMaintenance);
+        qobject_cast<MaintenancePage*>(ui->pageMaintenance)->refreshData();
+        });
 
     // 4. 切换到你的统计与导出页面
     connect(ui->btnExport, &QPushButton::clicked, this, [=]() {

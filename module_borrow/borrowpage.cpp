@@ -1,4 +1,5 @@
-﻿#include "borrowpage.h"
+﻿#include "csvexporter.h"
+#include "borrowpage.h"
 #include "ui_borrowpage.h"
 #include <QDebug>
 #include <QStandardItemModel>//表格数据
@@ -14,6 +15,32 @@
 #include "borrowdialog.h"
 #include "returndialog.h"
 #include <QDate>
+#include <QFileDialog>
+
+void BorrowPage::on_btn_export_borrow_clicked()
+{
+	// 1. 获取当前表格绑定的模型（如果你用了检索过滤代理模型，这里拿到的就是过滤后的数据！）
+	QAbstractItemModel* currentModel = ui->tableView->model();
+
+	if (currentModel->rowCount() == 0) {
+		QMessageBox::information(this, "提示", "当前没有可导出的数据！");
+		return;
+	}
+
+	// 2. 弹出保存对话框
+	QString defaultFileName = QString("借还记录检索结果_%1.csv").arg(QDate::currentDate().toString("yyyyMMdd"));
+	QString filePath = QFileDialog::getSaveFileName(this, "导出数据", defaultFileName, "CSV Files (*.csv)");
+
+	if (filePath.isEmpty()) return;
+
+	// 3. 调用 D 同学写的导出工具
+	if (CsvExporter::exportToCsv(currentModel, filePath)) {
+		QMessageBox::information(this, "成功", "数据已成功导出！");
+	}
+	else {
+		QMessageBox::critical(this, "失败", "导出失败，请检查文件是否被占用。");
+	}
+}
 
 BorrowPage::BorrowPage(QWidget *parent) :
     QWidget(parent),

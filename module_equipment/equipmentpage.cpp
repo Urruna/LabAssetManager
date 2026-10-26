@@ -1,3 +1,4 @@
+#include "csvexporter.h"
 #include "equipmentpage.h"
 
 #include "equipmentdialog.h"
@@ -16,6 +17,8 @@
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QTableView>
+#include <QDate>
+#include <QFileDialog>
 
 #include <algorithm>
 
@@ -46,6 +49,31 @@ protected:
 
 } // namespace
 
+void EquipmentPage::on_btn_export_equipment_clicked()
+{
+    // 1. 获取当前表格绑定的模型（如果你用了检索过滤代理模型，这里拿到的就是过滤后的数据！）
+    QAbstractItemModel* currentModel = ui->tableView->model();
+
+    if (currentModel->rowCount() == 0) {
+        QMessageBox::information(this, "提示", "当前没有可导出的数据！");
+        return;
+    }
+
+    // 2. 弹出保存对话框
+    QString defaultFileName = QString("设备检索结果_%1.csv").arg(QDate::currentDate().toString("yyyyMMdd"));
+    QString filePath = QFileDialog::getSaveFileName(this, "导出数据", defaultFileName, "CSV Files (*.csv)");
+
+    if (filePath.isEmpty()) return;
+
+    // 3. 调用 D 同学写的导出工具
+    if (CsvExporter::exportToCsv(currentModel, filePath)) {
+        QMessageBox::information(this, "成功", "数据已成功导出！");
+    }
+    else {
+        QMessageBox::critical(this, "失败", "导出失败，请检查文件是否被占用。");
+    }
+}
+
 EquipmentPage::EquipmentPage(QWidget* parent)
     : QWidget(parent),
       ui(new Ui::EquipmentPage)
@@ -53,9 +81,11 @@ EquipmentPage::EquipmentPage(QWidget* parent)
     ui->setupUi(this);
     setupTable();
 
-    ui->combo_status->addItem("全部状态", QString());
-    for (const QString& status : equipmentStatusValues()) {
-        ui->combo_status->addItem(equipmentStatusText(status), status);
+    ui->combo_status->addItem("全部状态", -1);
+    for (LabAsset::EquipmentStatus status : LabAsset::allEquipmentStatuses()) {
+        ui->combo_status->addItem(
+            LabAsset::statusToDisplay(status),
+            static_cast<int>(status));
     }
 
     connect(
@@ -162,7 +192,11 @@ void EquipmentPage::setupTable()
 void EquipmentPage::refreshData()
 {
     const QString keyword = ui->edit_keyword->text().trimmed();
-    const QString status = ui->combo_status->currentData().toString();
+    std::optional<LabAsset::EquipmentStatus> status;
+    const int statusValue = ui->combo_status->currentData().toInt();
+    if (statusValue >= 0) {
+        status = static_cast<LabAsset::EquipmentStatus>(statusValue);
+    }
 
     EquipmentRepository repository;
     m_equipment = repository.find(keyword, status);
@@ -204,7 +238,7 @@ void EquipmentPage::populateTable()
         row << priceItem;
 
         row << createItem(equipment.location);
-        row << createItem(equipmentStatusText(equipment.status));
+        row << createItem(LabAsset::statusToDisplay(equipment.status));
         row << createItem(equipment.keeper);
         row << createItem(equipment.remark);
 

@@ -1,5 +1,6 @@
 ﻿#include "returndialog.h"
 #include "databasemanager.h"
+#include "enums.h"
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QVariant>
@@ -21,11 +22,14 @@ ReturnDialog::ReturnDialog(int recordId, QWidget *parent):QDialog(parent),borrow
 		"FROM borrow_record b "
 		"JOIN equipment e ON b.equipment_id = e.id "
 		"WHERE b.id = :recordId "
-		"AND b.status = 'borrowed' "
+		"AND b.status = :borrowedStatus "
 		"AND b.actual_return_time IS NULL"
 	);
 
 	returnQuery.bindValue(":recordId", borrowRecordId);
+	returnQuery.bindValue(
+		":borrowedStatus",
+		LabAsset::statusToDb(LabAsset::EquipmentStatus::Borrowed));
 
 	if (!returnQuery.exec() || !returnQuery.next())
 	{
@@ -108,7 +112,7 @@ void ReturnDialog::accept()
 		"actual_return_time = :actualreturnTime "
 		"WHERE id = :recordId "
 		"AND equipment_id = :equipmentId "
-		"AND status = 'borrowed' "
+		"AND status = :borrowedStatus "
 		"AND actual_return_time IS NULL "
 		"AND borrow_time <= :actualreturnTime"
 	);
@@ -117,6 +121,9 @@ void ReturnDialog::accept()
 
 	returnQuery.bindValue(":recordId", borrowRecordId);
 	returnQuery.bindValue(":equipmentId", equipmentId);
+	returnQuery.bindValue(
+		":borrowedStatus",
+		LabAsset::statusToDb(LabAsset::EquipmentStatus::Borrowed));
 
 	if (!returnQuery.exec() || returnQuery.numRowsAffected() != 1)
 	{
@@ -135,20 +142,26 @@ void ReturnDialog::accept()
 
 	returnQuery.prepare(
 		"UPDATE equipment SET status = :equipmentStatus "
-		"WHERE id = :equipmentId AND status = 'borrowed' "
+		"WHERE id = :equipmentId AND status = :borrowedStatus "
 		"AND NOT EXISTS ("
 		"SELECT 1 FROM borrow_record b "
 		"WHERE b.equipment_id = equipment.id "
-		"AND (b.status = 'borrowed' OR b.actual_return_time IS NULL)"
+		"AND (b.status = :borrowedStatus OR b.actual_return_time IS NULL)"
 		")"
 	);
 
 	returnQuery.bindValue(
 		":equipmentStatus",
-		ui.check_damaged->isChecked() ? "damaged" : "available"
+		LabAsset::statusToDb(
+			ui.check_damaged->isChecked()
+				? LabAsset::EquipmentStatus::PendingRepair
+				: LabAsset::EquipmentStatus::Available)
 	);
 
 	returnQuery.bindValue(":equipmentId", equipmentId);
+	returnQuery.bindValue(
+		":borrowedStatus",
+		LabAsset::statusToDb(LabAsset::EquipmentStatus::Borrowed));
 
 	if (!returnQuery.exec() || returnQuery.numRowsAffected() != 1)
 	{
