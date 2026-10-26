@@ -28,11 +28,17 @@ module_maintenance
 2. **维修保养台账**
    - 联表显示设备编号、设备名称、日期、类型、说明、费用和经办人。
    - 支持按设备筛选和刷新。
-3. **编辑台账记录**
-   - 可以修改日期、类型、说明、费用、经办人和关联设备。
-   - 台账编辑只修正历史数据，不修改设备当前状态。
+3. **任务状态流转**
+   - 维修任务支持 `pending → in_progress → completed`。
+   - 保养任务创建后直接进入 `in_progress`。
+   - 开始维修时设备由 `pending_repair` 变为 `repairing`。
+   - 完成任务后设备恢复为 `available`。
+4. **编辑台账记录**
+   - 未完成任务可以修改日期、说明、费用和经办人。
+   - 已完成记录可以修正设备、类型和其他台账字段。
+   - 修改记录不重新驱动设备当前状态。
 
-普通界面不提供删除历史记录功能。`MaintenancePository::remove()` 仅作为数据清理接口保留。
+普通界面不提供删除入口，`MaintenancePository::remove()` 也只允许删除已完成记录。
 
 ## 对外接口
 
@@ -52,6 +58,7 @@ public:
 
 public slots:
     void refreshData();
+    bool createPendingRepairForDamagedReturn(int equipmentId);
 
 signals:
     void dataChanged();
@@ -140,20 +147,34 @@ connect(ui->pageMaintenance,
     &ExportPage::refreshData);
 ```
 
+借还页发生损坏归还时，由主窗口中转创建待维修任务：
+
+```cpp
+connect(ui->pageBorrow,
+    &BorrowPage::damagedEquipmentReturned,
+    ui->pageMaintenance,
+    &MaintenancePage::createPendingRepairForDamagedReturn);
+```
+
+设备管理模块不得修改设备状态；设备状态仅由借还和维修保养任务流转。
+
 ## 集成验收
 
 - [ ] 主窗口可以显示 `MaintenancePage`，点击“维修记录”能切换页面。
 - [ ] 新增对话框只列出 `available` 设备。
-- [ ] 新增维修记录后，设备状态变为 `pending_repair` 或 `repairing`。
-- [ ] 新增保养记录后，设备状态变为 `maintaining`。
+- [ ] 新增待维修任务后，设备状态变为 `pending_repair`。
+- [ ] 开始维修后，任务变为 `in_progress`，设备变为 `repairing`。
+- [ ] 新增保养任务后，任务为 `in_progress`，设备状态变为 `maintaining`。
+- [ ] 完成任务后，任务变为 `completed`，设备恢复 `available`。
 - [ ] 已借出、维修中或报废的设备不会出现在新增设备下拉框中。
 - [ ] 台账能显示设备名称、日期、类型、费用和说明。
 - [ ] 编辑台账后设备当前状态不发生变化。
 - [ ] 维保页刷新不会崩溃，空台账可以正常显示。
-- [ ] 新增或编辑后，`ExportPage` 的状态卡片同步刷新。
+- [ ] 损坏归还后，主窗口能创建待维修任务。
+- [ ] 设备编辑不能修改设备状态。
+- [ ] 新增、编辑、开始或完成后，各页面同步刷新。
 - [ ] 状态统计包含 `pending_repair` 和 `maintaining`。
 
 ## 当前状态
 
-模块自身已通过编译和数据层运行测试。主窗口尚未接入 `MaintenancePage`，
-最终完成以主窗口集成后的验收结果为准。
+`MaintenancePage` 已接入主窗口。最终完成以主窗口集成后的全流程验收结果为准。

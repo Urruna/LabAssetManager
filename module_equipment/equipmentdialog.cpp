@@ -1,11 +1,11 @@
 #include "equipmentdialog.h"
 
-#include <QComboBox>
 #include <QDate>
 #include <QDateEdit>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
+#include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPlainTextEdit>
@@ -69,13 +69,12 @@ void EquipmentDialog::setupUi()
     m_locationEdit->setPlaceholderText("例如：实验楼 302");
     formLayout->addRow("存放位置：", m_locationEdit);
 
-    m_statusCombo = new QComboBox(this);
-    for (LabAsset::EquipmentStatus status : LabAsset::allEquipmentStatuses()) {
-        m_statusCombo->addItem(
-            LabAsset::statusToDisplay(status),
-            static_cast<int>(status));
-    }
-    formLayout->addRow("设备状态：", m_statusCombo);
+    m_statusValueLabel = new QLabel(
+        LabAsset::statusToDisplay(m_status),
+        this);
+    m_statusValueLabel->setToolTip(
+        "设备状态由借还和维修保养流程维护，不能在此手动修改。");
+    formLayout->addRow("设备状态：", m_statusValueLabel);
 
     m_keeperEdit = new QLineEdit(this);
     m_keeperEdit->setPlaceholderText("填写设备责任人");
@@ -124,11 +123,9 @@ void EquipmentDialog::setEquipment(const Equipment& equipment)
     m_priceSpin->setValue(equipment.price);
     m_locationEdit->setText(equipment.location);
 
-    const int statusIndex = m_statusCombo->findData(
-        static_cast<int>(equipment.status));
-    if (statusIndex >= 0) {
-        m_statusCombo->setCurrentIndex(statusIndex);
-    }
+    m_status = equipment.status;
+    m_statusValueLabel->setText(
+        LabAsset::statusToDisplay(m_status));
 
     m_keeperEdit->setText(equipment.keeper);
     m_remarkEdit->setPlainText(equipment.remark);
@@ -146,8 +143,7 @@ Equipment EquipmentDialog::equipment() const
         m_purchaseDateEdit->date().toString("yyyy-MM-dd");
     result.price = m_priceSpin->value();
     result.location = m_locationEdit->text().trimmed();
-    result.status = static_cast<LabAsset::EquipmentStatus>(
-        m_statusCombo->currentData().toInt());
+    result.status = m_status;
     result.keeper = m_keeperEdit->text().trimmed();
     result.remark = m_remarkEdit->toPlainText().trimmed();
     return result;

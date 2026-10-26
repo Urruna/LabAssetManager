@@ -1,133 +1,101 @@
 #include <QAbstractItemView>
 #include <QComboBox>
-#include <QHBoxLayout>
+#include <QDate>
+#include <QFileDialog>
 #include <QHeaderView>
-#include <QLabel>
+#include <QItemSelectionModel>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSignalBlocker>
 #include <QStringList>
 #include <QTableWidget>
 #include <QTableWidgetItem>
-#include <QVBoxLayout>
+
+#include "csvexporter.h"
 #include "maintenancedialog.h"
 #include "maintenancepage.h"
-#include "csvexporter.h"  
-#include <QFileDialog>   
-#include <QDate>    
+#include "ui_maintenancepage.h"
 
 MaintenancePage::MaintenancePage(QWidget* parent)
-    : QWidget(parent)
+    : QWidget(parent),
+      ui(new Ui::MaintenancePage)
 {
-    setupUi();
-    refreshData();
-}
+    ui->setupUi(this);
 
-void MaintenancePage::setupUi()
-{
-    setObjectName("maintenancePage");
+    ui->tableView->horizontalHeader()->setSectionResizeMode(
+        QHeaderView::ResizeToContents);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(
+        5,
+        QHeaderView::Stretch);
 
-    QVBoxLayout* rootLayout = new QVBoxLayout(this);
-    QLabel* titleLabel = new QLabel("维修保养台账", this);
-    titleLabel->setStyleSheet("font-size: 20px; font-weight: bold;");
-    rootLayout->addWidget(titleLabel);
-
-    QHBoxLayout* toolLayout = new QHBoxLayout();
-    QLabel* filterLabel = new QLabel("设备：", this);
-    m_equipmentFilter = new QComboBox(this);
-    m_equipmentFilter->setMinimumWidth(240);
-    m_addButton = new QPushButton("新增记录", this);
-    m_editButton = new QPushButton("编辑记录", this);
-    m_refreshButton = new QPushButton("刷新", this);
-    m_exportButton = new QPushButton("导出", this);
-    m_editButton->setEnabled(false);
-
-    toolLayout->addWidget(filterLabel);
-    toolLayout->addWidget(m_equipmentFilter);
-    toolLayout->addStretch();
-    toolLayout->addWidget(m_addButton);
-    toolLayout->addWidget(m_editButton);
-    toolLayout->addWidget(m_refreshButton);
-    rootLayout->addLayout(toolLayout);
-
-    m_table = new QTableWidget(this);
-    m_table->setColumnCount(7);
-    m_table->setHorizontalHeaderLabels({
-        "设备编号", "设备名称", "日期", "类型", "说明", "费用", "经办人"
-    });
-    m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_table->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_table->setAlternatingRowColors(true);
-    m_table->verticalHeader()->setVisible(false);
-    m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-    m_table->horizontalHeader()->setSectionResizeMode(4, QHeaderView::Stretch);
-    rootLayout->addWidget(m_table, 1);
-
-    QHBoxLayout* bottomLayout = new QHBoxLayout();
-
-    m_statusLabel = new QLabel(this);
-    bottomLayout->addWidget(m_statusLabel);
-
-    bottomLayout->addStretch(); 
-    bottomLayout->addWidget(m_exportButton); 
-
-    rootLayout->addLayout(bottomLayout);
-
-    connect(m_equipmentFilter,
+    connect(ui->combo_equipment,
         QOverload<int>::of(&QComboBox::currentIndexChanged),
         this,
         [this](int) {
             refreshData();
         });
-    connect(m_addButton, &QPushButton::clicked, this, &MaintenancePage::addRecord);
-    connect(m_editButton, &QPushButton::clicked, this, &MaintenancePage::editRecord);
-    connect(m_refreshButton, &QPushButton::clicked, this, &MaintenancePage::refreshData);
-    connect(m_table,
+    connect(ui->btn_add, &QPushButton::clicked, this, &MaintenancePage::addRecord);
+    connect(ui->btn_edit, &QPushButton::clicked, this, &MaintenancePage::editRecord);
+    connect(ui->btn_start, &QPushButton::clicked, this, &MaintenancePage::startRecord);
+    connect(ui->btn_complete, &QPushButton::clicked, this, &MaintenancePage::completeRecord);
+    connect(ui->btn_refresh, &QPushButton::clicked, this, &MaintenancePage::refreshData);
+    connect(ui->tableView,
         &QTableWidget::itemSelectionChanged,
         this,
-        [this]() {
-            m_editButton->setEnabled(m_table->currentRow() >= 0);
+        &MaintenancePage::updateActionButtons);
+    connect(ui->tableView,
+        &QTableWidget::currentCellChanged,
+        this,
+        [this](int, int, int, int) {
+            updateActionButtons();
         });
-    connect(m_table,
+    connect(ui->tableView,
         &QTableWidget::cellDoubleClicked,
         this,
         [this](int, int) {
             editRecord();
         });
-    connect(m_exportButton, &QPushButton::clicked, this, &MaintenancePage::exportData);
+    connect(ui->btn_export, &QPushButton::clicked, this, &MaintenancePage::exportData);
+
+    refreshData();
+}
+
+MaintenancePage::~MaintenancePage()
+{
+    delete ui;
 }
 
 void MaintenancePage::refreshEquipmentFilter()
 {
-    QSignalBlocker blocker(m_equipmentFilter);
-    int previousId = m_equipmentFilter->currentData().toInt();
-    m_equipmentFilter->clear();
-    m_equipmentFilter->addItem("全部设备", -1);
+    QSignalBlocker blocker(ui->combo_equipment);
+    const int previousId = ui->combo_equipment->currentData().toInt();
+    ui->combo_equipment->clear();
+    ui->combo_equipment->addItem("全部设备", -1);
 
-    QList<MaintenanceEquipmentOption> options =
+    const QList<MaintenanceEquipmentOption> options =
         m_repository.findEquipmentOptions(false);
     for (const MaintenanceEquipmentOption& option : options) {
-        QString text = option.assetNo + " - " + option.name;
-        m_equipmentFilter->addItem(text, option.id);
+        const QString text = option.assetNo + " - " + option.name;
+        ui->combo_equipment->addItem(text, option.id);
     }
 
-    int previousIndex = m_equipmentFilter->findData(previousId);
-    m_equipmentFilter->setCurrentIndex(previousIndex >= 0 ? previousIndex : 0);
+    const int previousIndex = ui->combo_equipment->findData(previousId);
+    ui->combo_equipment->setCurrentIndex(previousIndex >= 0 ? previousIndex : 0);
 }
 
 void MaintenancePage::refreshData()
 {
     refreshEquipmentFilter();
 
-    int equipmentId = m_equipmentFilter->currentData().toInt();
+    const int equipmentId = ui->combo_equipment->currentData().toInt();
     m_records = m_repository.findLedger(equipmentId);
 
     if (!m_repository.lastError().isEmpty()) {
-        m_statusLabel->setText("查询失败：" + m_repository.lastError());
+        ui->label_status->setText("查询失败：" + m_repository.lastError());
     }
     else {
-        m_statusLabel->setText(QString("共 %1 条记录").arg(m_records.size()));
+        ui->label_status->setText(
+            QString("共 %1 条记录").arg(m_records.size()));
     }
 
     populateTable();
@@ -135,32 +103,60 @@ void MaintenancePage::refreshData()
 
 void MaintenancePage::populateTable()
 {
-    m_table->setRowCount(m_records.size());
+    ui->tableView->setRowCount(m_records.size());
 
     for (int row = 0; row < m_records.size(); ++row) {
         const MaintenanceLedgerItem& item = m_records.at(row);
-        QString typeText = item.record.type == "repair" ? "维修" : "保养";
-        QStringList values = {
+        const QString typeText =
+            item.record.type == "repair" ? "维修" : "保养";
+        QString statusText =
+            LabAsset::maintenanceStatusToDisplay(item.record.status);
+        if (item.record.status == LabAsset::MaintenanceStatus::Pending) {
+            statusText = "待维修";
+        }
+
+        const QStringList values = {
             item.assetNo,
             item.equipmentName,
             item.record.maintenanceDate,
             typeText,
+            statusText,
             item.record.description,
             QString::number(item.record.cost, 'f', 2) + " 元",
             item.record.operatorName
         };
 
         for (int column = 0; column < values.size(); ++column) {
-            QTableWidgetItem* cell = new QTableWidgetItem(values.at(column));
+            QTableWidgetItem* cell =
+                new QTableWidgetItem(values.at(column));
             if (column == 0 || column == 2 || column == 3 ||
-                column == 5 || column == 6) {
+                column == 4 || column == 6 || column == 7) {
                 cell->setTextAlignment(Qt::AlignCenter);
             }
-            m_table->setItem(row, column, cell);
+            ui->tableView->setItem(row, column, cell);
         }
     }
 
-    m_editButton->setEnabled(false);
+    updateActionButtons();
+}
+
+void MaintenancePage::updateActionButtons()
+{
+    const int row = ui->tableView->currentRow();
+    const bool selected =
+        row >= 0 &&
+        row < m_records.size() &&
+        ui->tableView->selectionModel()->hasSelection();
+
+    ui->btn_edit->setEnabled(selected);
+    ui->btn_start->setEnabled(
+        selected &&
+        m_records.at(row).record.status ==
+            LabAsset::MaintenanceStatus::Pending);
+    ui->btn_complete->setEnabled(
+        selected &&
+        m_records.at(row).record.status ==
+            LabAsset::MaintenanceStatus::InProgress);
 }
 
 void MaintenancePage::addRecord()
@@ -171,7 +167,7 @@ void MaintenancePage::addRecord()
     }
 
     MaintenanceRecord record = dialog.record();
-    if (!m_repository.add(record, dialog.equipmentStatus())) {
+    if (!m_repository.add(record)) {
         QMessageBox::warning(this, "保存失败", m_repository.lastError());
         return;
     }
@@ -180,9 +176,58 @@ void MaintenancePage::addRecord()
     emit dataChanged();
 }
 
+void MaintenancePage::startRecord()
+{
+    const int row = ui->tableView->currentRow();
+    if (row < 0 || row >= m_records.size()) {
+        QMessageBox::information(this, "提示", "请先选择一条待维修记录。");
+        return;
+    }
+
+    if (!m_repository.start(m_records.at(row).record.id)) {
+        QMessageBox::warning(this, "开始失败", m_repository.lastError());
+        return;
+    }
+
+    refreshData();
+    emit dataChanged();
+}
+
+void MaintenancePage::completeRecord()
+{
+    const int row = ui->tableView->currentRow();
+    if (row < 0 || row >= m_records.size()) {
+        QMessageBox::information(this, "提示", "请先选择一条处理中的记录。");
+        return;
+    }
+
+    if (!m_repository.complete(m_records.at(row).record.id)) {
+        QMessageBox::warning(this, "完成失败", m_repository.lastError());
+        return;
+    }
+
+    refreshData();
+    emit dataChanged();
+}
+
+bool MaintenancePage::createPendingRepairForDamagedReturn(int equipmentId)
+{
+    if (!m_repository.createPendingRepairForDamagedReturn(equipmentId)) {
+        QMessageBox::warning(
+            this,
+            "创建待维修任务失败",
+            m_repository.lastError());
+        return false;
+    }
+
+    refreshData();
+    emit dataChanged();
+    return true;
+}
+
 void MaintenancePage::editRecord()
 {
-    int row = m_table->currentRow();
+    const int row = ui->tableView->currentRow();
     if (row < 0 || row >= m_records.size()) {
         QMessageBox::information(this, "提示", "请先选择一条记录。");
         return;
@@ -204,26 +249,31 @@ void MaintenancePage::editRecord()
 
 void MaintenancePage::exportData()
 {
-    // 1. 判断当前是否有数据
     if (m_records.isEmpty()) {
         QMessageBox::information(this, "提示", "当前表格没有可导出的数据！");
         return;
     }
 
-    // 2. 获取当前表格的模型（QTableWidget 也可以作为模型传进去）
-    QAbstractItemModel* currentModel = m_table->model();
+    const QString defaultFileName =
+        QString("维保记录检索结果_%1.csv")
+            .arg(QDate::currentDate().toString("yyyyMMdd"));
+    const QString filePath = QFileDialog::getSaveFileName(
+        this,
+        "导出数据",
+        defaultFileName,
+        "CSV Files (*.csv)");
 
-    // 3. 弹出保存对话框
-    QString defaultFileName = QString("维保记录检索结果_%1.csv").arg(QDate::currentDate().toString("yyyyMMdd"));
-    QString filePath = QFileDialog::getSaveFileName(this, "导出数据", defaultFileName, "CSV Files (*.csv)");
+    if (filePath.isEmpty()) {
+        return;
+    }
 
-    if (filePath.isEmpty()) return; // 用户取消了保存
-
-    // 4. 调用你写的通用导出工具
-    if (CsvExporter::exportToCsv(currentModel, filePath)) {
+    if (CsvExporter::exportToCsv(ui->tableView->model(), filePath)) {
         QMessageBox::information(this, "成功", "数据已成功导出！");
     }
     else {
-        QMessageBox::critical(this, "失败", "导出失败，请检查文件是否被占用。");
+        QMessageBox::critical(
+            this,
+            "失败",
+            "导出失败，请检查文件是否被占用。");
     }
 }

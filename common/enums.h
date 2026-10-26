@@ -14,6 +14,12 @@ namespace LabAsset {
         Scrapped     // 已报废
     };
 
+    enum class MaintenanceStatus {
+        Pending,     // 待处理
+        InProgress,  // 处理中
+        Completed    // 已完成
+    };
+
     inline const std::array<EquipmentStatus, 6>& allEquipmentStatuses() {
         static const std::array<EquipmentStatus, 6> statuses = {
             EquipmentStatus::Available,
@@ -59,6 +65,32 @@ namespace LabAsset {
         case EquipmentStatus::Repairing:     return QStringLiteral("维修中");
         case EquipmentStatus::Maintaining:   return QStringLiteral("保养中");
         case EquipmentStatus::Scrapped:      return QStringLiteral("已报废");
+        }
+        return {};
+    }
+
+    inline QString maintenanceStatusToDb(MaintenanceStatus s) {
+        switch (s) {
+        case MaintenanceStatus::Pending:    return "pending";
+        case MaintenanceStatus::InProgress: return "in_progress";
+        case MaintenanceStatus::Completed:  return "completed";
+        }
+        return {};
+    }
+
+    inline std::optional<MaintenanceStatus> maintenanceStatusFromDb(
+        const QString& s) {
+        if (s == "pending")     return MaintenanceStatus::Pending;
+        if (s == "in_progress") return MaintenanceStatus::InProgress;
+        if (s == "completed")   return MaintenanceStatus::Completed;
+        return std::nullopt;
+    }
+
+    inline QString maintenanceStatusToDisplay(MaintenanceStatus s) {
+        switch (s) {
+        case MaintenanceStatus::Pending:    return QStringLiteral("待处理");
+        case MaintenanceStatus::InProgress: return QStringLiteral("处理中");
+        case MaintenanceStatus::Completed:  return QStringLiteral("已完成");
         }
         return {};
     }

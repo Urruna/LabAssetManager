@@ -3,6 +3,7 @@
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QDebug>
+#include <QDate>
 
 const QString DatabaseManager::kConnectionName = "lab_asset_main";
 
@@ -77,6 +78,7 @@ bool DatabaseManager::createTables()
             equipment_id     INTEGER NOT NULL,
             maintenance_date TEXT NOT NULL,
             type             TEXT NOT NULL,
+            status           TEXT NOT NULL DEFAULT 'pending',
             description      TEXT,
             cost             REAL DEFAULT 0,
             operator         TEXT,
@@ -91,6 +93,32 @@ bool DatabaseManager::createTables()
     for (const QString& sql : stmts) {
         if (!q.exec(sql)) {
             qCritical() << "建表失败:" << sql << q.lastError().text();
+            return false;
+        }
+    }
+
+    // 旧数据库没有任务状态列；已有记录按历史完成记录迁移。
+    bool hasMaintenanceStatus = false;
+    QSqlQuery tableInfo(m_db);
+    if (!tableInfo.exec("PRAGMA table_info(maintenance_record)")) {
+        qCritical() << "读取维保表结构失败:" << tableInfo.lastError().text();
+        return false;
+    }
+    while (tableInfo.next()) {
+        if (tableInfo.value(1).toString() == "status") {
+            hasMaintenanceStatus = true;
+            break;
+        }
+    }
+
+    if (!hasMaintenanceStatus) {
+        QSqlQuery alterTable(m_db);
+        if (!alterTable.exec(
+                "ALTER TABLE maintenance_record "
+                "ADD COLUMN status TEXT NOT NULL DEFAULT 'completed'")) {
+            qCritical()
+                << "增加维保任务状态列失败:"
+                << alterTable.lastError().text();
             return false;
         }
     }
@@ -127,6 +155,66 @@ bool DatabaseManager::createTables()
                 << "迁移设备状态失败:"
                 << item.oldStatus
                 << migration.lastError().text();
+            m_db.rollback();
+            return false;
+        }
+    }
+
+    // 为旧数据库中处于维修流程但没有对应任务的设备补齐当前任务。
+    QSqlQuery activeTask(m_db);
+    if (!activeTask.prepare(
+            "INSERT INTO maintenance_record "
+            "(equipment_id, maintenance_date, type, description, cost, operator, status) "
+            "SELECT e.id, :date, :type, :description, 0, :operator, :maintenance_status "
+            "FROM equipment e "
+            "WHERE e.status = :equipment_status "
+            "AND NOT EXISTS ("
+            "SELECT 1 FROM maintenance_record m "
+            "WHERE m.equipment_id = e.id "
+            "AND m.status IN ('pending', 'in_progress')"
+            ")")) {
+        qCritical() << "准备补齐维保任务失败:" << activeTask.lastError().text();
+        m_db.rollback();
+        return false;
+    }
+
+    const struct {
+        LabAsset::EquipmentStatus equipmentStatus;
+        LabAsset::MaintenanceStatus maintenanceStatus;
+        const char* type;
+        const char* description;
+    } activeTaskMigrations[] = {
+        {LabAsset::EquipmentStatus::PendingRepair,
+         LabAsset::MaintenanceStatus::Pending,
+         "repair",
+         "系统迁移生成待维修任务"},
+        {LabAsset::EquipmentStatus::Repairing,
+         LabAsset::MaintenanceStatus::InProgress,
+         "repair",
+         "系统迁移生成维修任务"},
+        {LabAsset::EquipmentStatus::Maintaining,
+         LabAsset::MaintenanceStatus::InProgress,
+         "maintain",
+         "系统迁移生成保养任务"}
+    };
+
+    const QString migrationDate =
+        QDate::currentDate().toString("yyyy-MM-dd");
+    for (const auto& item : activeTaskMigrations) {
+        activeTask.bindValue(":date", migrationDate);
+        activeTask.bindValue(":type", item.type);
+        activeTask.bindValue(":description", item.description);
+        activeTask.bindValue(":operator", "系统");
+        activeTask.bindValue(
+            ":maintenance_status",
+            LabAsset::maintenanceStatusToDb(item.maintenanceStatus));
+        activeTask.bindValue(
+            ":equipment_status",
+            LabAsset::statusToDb(item.equipmentStatus));
+        if (!activeTask.exec()) {
+            qCritical()
+                << "补齐维保任务失败:"
+                << activeTask.lastError().text();
             m_db.rollback();
             return false;
         }

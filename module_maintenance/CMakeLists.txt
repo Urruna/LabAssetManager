@@ -1,6 +1,7 @@
 add_library(module_maintenance STATIC
     maintenancepage.h
     maintenancepage.cpp
+    maintenancepage.ui
     maintenancedialog.h
     maintenancedialog.cpp
     maintenancepository.h

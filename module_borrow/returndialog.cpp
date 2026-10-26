@@ -79,6 +79,16 @@ QDateTime ReturnDialog::actualreturnTime() const
 	return ui.dt_actual_return_time->dateTime();
 }
 
+int ReturnDialog::returnedEquipmentId() const
+{
+	return equipmentId;
+}
+
+bool ReturnDialog::isDamaged() const
+{
+	return ui.check_damaged->isChecked();
+}
+
 void ReturnDialog::accept()
 {
 	if (equipmentId <= 0 || !borrowTime.isValid() || !actualreturnTime().isValid() || actualreturnTime() < borrowTime)

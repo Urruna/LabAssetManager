@@ -11,6 +11,35 @@ MainWindow::MainWindow(QWidget* parent)
 {
     ui->setupUi(this);
 
+    auto refreshAllPages = [this]() {
+        ui->pageEquipment->refreshData();
+        ui->pageBorrow->refreshData();
+        ui->pageMaintenance->refreshData();
+        ui->pageExport->refreshData();
+    };
+
+    connect(
+        ui->pageEquipment,
+        &EquipmentPage::dataChanged,
+        this,
+        refreshAllPages);
+    connect(
+        ui->pageBorrow,
+        &BorrowPage::dataChanged,
+        this,
+        refreshAllPages);
+    connect(
+        ui->pageMaintenance,
+        &MaintenancePage::dataChanged,
+        this,
+        refreshAllPages);
+
+    connect(
+        ui->pageBorrow,
+        &BorrowPage::damagedEquipmentReturned,
+        ui->pageMaintenance,
+        &MaintenancePage::createPendingRepairForDamagedReturn);
+
     // 1. 设备管理
     connect(ui->btnEquipment, &QPushButton::clicked, this, [=]() {
         ui->stackedWidget->setCurrentWidget(ui->pageEquipment);

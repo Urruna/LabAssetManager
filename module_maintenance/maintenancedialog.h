@@ -22,7 +22,6 @@ public:
     MaintenanceDialog(const MaintenanceRecord& record, QWidget* parent = nullptr);
 
     MaintenanceRecord record() const;
-    LabAsset::EquipmentStatus equipmentStatus() const;
 
 protected:
     void accept() override;
@@ -36,6 +35,8 @@ private:
     MaintenancePository m_repository;
     bool m_editing = false;
     int m_recordId = -1;
+    LabAsset::MaintenanceStatus m_recordStatus =
+        LabAsset::MaintenanceStatus::Pending;
 
     QComboBox* m_equipmentCombo = nullptr;
     QDateEdit* m_dateEdit = nullptr;

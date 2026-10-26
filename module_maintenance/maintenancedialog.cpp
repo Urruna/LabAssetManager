@@ -55,7 +55,7 @@ void MaintenanceDialog::setupUi()
     m_typeCombo->addItem("保养", "maintain");
     formLayout->addRow("类型：", m_typeCombo);
 
-    m_statusLabel = new QLabel("设备状态：", this);
+    m_statusLabel = new QLabel("任务状态：", this);
     m_statusCombo = new QComboBox(this);
     formLayout->addRow(m_statusLabel, m_statusCombo);
 
@@ -123,16 +123,19 @@ void MaintenanceDialog::updateStatusOptions()
     QString type = m_typeCombo->currentData().toString();
     if (type == "repair") {
         m_statusCombo->addItem(
-            LabAsset::statusToDisplay(LabAsset::EquipmentStatus::PendingRepair),
-            static_cast<int>(LabAsset::EquipmentStatus::PendingRepair));
+            LabAsset::maintenanceStatusToDisplay(
+                LabAsset::MaintenanceStatus::Pending),
+            static_cast<int>(LabAsset::MaintenanceStatus::Pending));
         m_statusCombo->addItem(
-            LabAsset::statusToDisplay(LabAsset::EquipmentStatus::Repairing),
-            static_cast<int>(LabAsset::EquipmentStatus::Repairing));
+            LabAsset::maintenanceStatusToDisplay(
+                LabAsset::MaintenanceStatus::InProgress),
+            static_cast<int>(LabAsset::MaintenanceStatus::InProgress));
     }
     else {
         m_statusCombo->addItem(
-            LabAsset::statusToDisplay(LabAsset::EquipmentStatus::Maintaining),
-            static_cast<int>(LabAsset::EquipmentStatus::Maintaining));
+            LabAsset::maintenanceStatusToDisplay(
+                LabAsset::MaintenanceStatus::InProgress),
+            static_cast<int>(LabAsset::MaintenanceStatus::InProgress));
     }
 
     // 编辑台账只修正历史数据，不重新驱动设备当前状态。
@@ -163,6 +166,12 @@ void MaintenanceDialog::selectRecord(const MaintenanceRecord& record)
     m_costSpin->setValue(record.cost);
     m_descriptionEdit->setPlainText(record.description);
     m_operatorEdit->setText(record.operatorName);
+    m_recordStatus = record.status;
+
+    const bool completed =
+        record.status == LabAsset::MaintenanceStatus::Completed;
+    m_equipmentCombo->setEnabled(completed);
+    m_typeCombo->setEnabled(completed);
 
     updateStatusOptions();
 }
@@ -177,13 +186,11 @@ MaintenanceRecord MaintenanceDialog::record() const
     result.description = m_descriptionEdit->toPlainText().trimmed();
     result.cost = m_costSpin->value();
     result.operatorName = m_operatorEdit->text().trimmed();
+    result.status = m_editing
+        ? m_recordStatus
+        : static_cast<LabAsset::MaintenanceStatus>(
+            m_statusCombo->currentData().toInt());
     return result;
-}
-
-LabAsset::EquipmentStatus MaintenanceDialog::equipmentStatus() const
-{
-    return static_cast<LabAsset::EquipmentStatus>(
-        m_statusCombo->currentData().toInt());
 }
 
 void MaintenanceDialog::accept()

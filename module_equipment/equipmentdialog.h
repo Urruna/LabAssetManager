@@ -5,10 +5,10 @@
 #include "equipment.h"
 #include "equipmentrepository.h"
 
-class QComboBox;
 class QDateEdit;
 class QDialogButtonBox;
 class QDoubleSpinBox;
+class QLabel;
 class QLineEdit;
 class QPlainTextEdit;
 
@@ -31,6 +31,8 @@ private:
 
     EquipmentRepository m_repository;
     int m_equipmentId = -1;
+    LabAsset::EquipmentStatus m_status =
+        LabAsset::EquipmentStatus::Available;
 
     QLineEdit* m_assetNoEdit = nullptr;
     QLineEdit* m_nameEdit = nullptr;
@@ -39,7 +41,7 @@ private:
     QDateEdit* m_purchaseDateEdit = nullptr;
     QDoubleSpinBox* m_priceSpin = nullptr;
     QLineEdit* m_locationEdit = nullptr;
-    QComboBox* m_statusCombo = nullptr;
+    QLabel* m_statusValueLabel = nullptr;
     QLineEdit* m_keeperEdit = nullptr;
     QPlainTextEdit* m_remarkEdit = nullptr;
     QDialogButtonBox* m_buttonBox = nullptr;

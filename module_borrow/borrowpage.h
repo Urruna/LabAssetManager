@@ -22,6 +22,7 @@ public slots:
 
 signals:
 	void dataChanged();
+	void damagedEquipmentReturned(int equipmentId);
 
 private slots:
 	void on_btn_search_clicked();

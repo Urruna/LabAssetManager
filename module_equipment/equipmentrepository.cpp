@@ -175,7 +175,7 @@ bool EquipmentRepository::add(Equipment& equipment)
     query.bindValue(":location", equipment.location);
     query.bindValue(
         ":status",
-        LabAsset::statusToDb(equipment.status));
+        LabAsset::statusToDb(LabAsset::EquipmentStatus::Available));
     query.bindValue(":keeper", equipment.keeper);
     query.bindValue(":remark", equipment.remark);
 
@@ -191,6 +191,7 @@ bool EquipmentRepository::add(Equipment& equipment)
     }
 
     equipment.id = query.lastInsertId().toInt();
+    equipment.status = LabAsset::EquipmentStatus::Available;
     return true;
 }
 
@@ -218,7 +219,7 @@ bool EquipmentRepository::update(Equipment& equipment)
             "UPDATE equipment SET "
             "asset_no = :asset_no, name = :name, model = :model, "
             "brand = :brand, purchase_date = :purchase_date, "
-            "price = :price, location = :location, status = :status, "
+            "price = :price, location = :location, "
             "keeper = :keeper, remark = :remark "
             "WHERE id = :id")) {
         m_lastError = "准备更新设备失败：" + query.lastError().text();
@@ -232,9 +233,6 @@ bool EquipmentRepository::update(Equipment& equipment)
     query.bindValue(":purchase_date", equipment.purchaseDate);
     query.bindValue(":price", equipment.price);
     query.bindValue(":location", equipment.location);
-    query.bindValue(
-        ":status",
-        LabAsset::statusToDb(equipment.status));
     query.bindValue(":keeper", equipment.keeper);
     query.bindValue(":remark", equipment.remark);
     query.bindValue(":id", equipment.id);

@@ -60,7 +60,14 @@ void ExportPage::on_btn_export_maintenance_clicked()
     QString fileName = QString("维修记录_%1.csv").arg(QDate::currentDate().toString("yyyyMMdd"));
     QString sql = R"(
         SELECT m.maintenance_date AS '日期', e.name AS '设备名称', 
-               m.type AS '类型', m.cost AS '费用', m.description AS '描述'
+               m.type AS '类型',
+               CASE m.status
+                   WHEN 'pending' THEN '待维修'
+                   WHEN 'in_progress' THEN '处理中'
+                   WHEN 'completed' THEN '已完成'
+                   ELSE m.status
+               END AS '任务状态',
+               m.cost AS '费用', m.description AS '描述'
         FROM maintenance_record m 
         LEFT JOIN equipment e ON m.equipment_id = e.id
     )";

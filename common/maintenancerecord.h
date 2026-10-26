@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include "enums.h"
 
 struct MaintenanceRecord
 {
@@ -11,4 +12,5 @@ struct MaintenanceRecord
     QString description;
     double cost = 0.0;
     QString operatorName;
+    LabAsset::MaintenanceStatus status = LabAsset::MaintenanceStatus::Pending;
 };

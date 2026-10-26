@@ -216,8 +216,13 @@ void BorrowPage::on_btn_return_clicked()
 
 	if (returnDialog.exec() == QDialog::Accepted)
 	{
+		const bool damaged = returnDialog.isDamaged();
+		const int returnedEquipmentId = returnDialog.returnedEquipmentId();
 		refreshData();
 		emit dataChanged();
+		if (damaged) {
+			emit damagedEquipmentReturned(returnedEquipmentId);
+		}
 		QMessageBox::information(
 			this,
 			QString::fromUtf8("成功"),

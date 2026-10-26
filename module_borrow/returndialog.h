@@ -12,6 +12,8 @@ public:
 	ReturnDialog(int recordId, QWidget *parent = nullptr);
 	~ReturnDialog();
 	QDateTime actualreturnTime() const;
+	int returnedEquipmentId() const;
+	bool isDamaged() const;
 
 public slots:
 	void accept() override;

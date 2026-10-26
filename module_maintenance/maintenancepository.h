@@ -33,9 +33,10 @@ public:
         bool availableOnly = false) const;
     QMap<QString, int> countEquipmentByStatus() const;
 
-    bool add(
-        MaintenanceRecord& record,
-        LabAsset::EquipmentStatus equipmentStatus);
+    bool add(MaintenanceRecord& record);
+    bool start(int id);
+    bool complete(int id);
+    bool createPendingRepairForDamagedReturn(int equipmentId);
     bool update(const MaintenanceRecord& record);
     bool remove(int id);
 

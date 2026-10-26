@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS maintenance_record (
     equipment_id     INTEGER NOT NULL,
     maintenance_date TEXT    NOT NULL,
     type             TEXT    NOT NULL,              -- repair/maintain
+    status           TEXT    NOT NULL DEFAULT 'pending', -- pending/in_progress/completed
     description      TEXT,
     cost             REAL    DEFAULT 0,
     operator         TEXT,                          -- 经办人
@@ -53,9 +54,11 @@ CREATE INDEX IF NOT EXISTS idx_maintenance_equipment   ON maintenance_record(equ
 2. **设备“借出”时 `status` 怎么变** ：约定为借出时 `equipment.status` 从 `available` 改为 `borrowed`，归还时改回 `available`。这条规则 B 和 A 必须一致，否则统计页（C）的数字会乱。
 3. **删除设备时关联记录怎么办** ：`borrow_record` 用 `ON DELETE RESTRICT`（有借还记录就不让删设备），`maintenance_record` 用 `ON DELETE CASCADE`（删设备连带删维保记录）。这是业务规则，要提前说清楚。
 4. **日期格式统一** ：全组统一 `"yyyy-MM-dd"`（日期）和 `"yyyy-MM-dd HH:mm:ss"`（时间戳），用 `QDateTime::toString("yyyy-MM-dd HH:mm:ss")` 生成。
-5. **维修保养状态联动** ：新增维修记录时，设备当前必须为 `available`，目标状态为 `pending_repair` 或 `repairing`；新增保养记录时，目标状态为 `maintaining`。修改或删除台账记录不联动修改设备当前状态。
+5. **维修保养状态联动** ：新增维修任务时，设备当前必须为 `available`，待维修任务将设备置为 `pending_repair`；直接开始的维修任务将设备置为 `repairing`。保养任务创建后直接进入 `in_progress`，设备置为 `maintaining`。未完成任务修改只允许修改日期、说明、费用和经办人；完成后设备恢复 `available`。
 
-6. **旧数据迁移** ：程序启动时会将旧值 `under_maintenance` 迁移为 `maintaining`，将 `damaged` 迁移为 `pending_repair`。损坏归还不再写入独立状态。
+6. **旧数据迁移** ：程序启动时会将旧值 `under_maintenance` 迁移为 `maintaining`，将 `damaged` 迁移为 `pending_repair`。旧维保记录迁移后视为 `completed`；处于维修流程但缺少任务的设备会自动补齐当前任务。
+
+7. **维保任务状态** ：`maintenance_record.status` 使用 `pending`、`in_progress`、`completed`。任务状态通过开始、完成操作流转，普通编辑不能任意修改。
 
 ## 验证
 

@@ -4,10 +4,9 @@
 #include <QWidget>
 #include "maintenancepository.h"
 
-class QComboBox;
-class QLabel;
-class QPushButton;
-class QTableWidget;
+QT_BEGIN_NAMESPACE
+namespace Ui { class MaintenancePage; }
+QT_END_NAMESPACE
 
 class MaintenancePage : public QWidget
 {
@@ -15,9 +14,11 @@ class MaintenancePage : public QWidget
 
 public:
     explicit MaintenancePage(QWidget* parent = nullptr);
+    ~MaintenancePage() override;
 
 public slots:
     void refreshData();
+    bool createPendingRepairForDamagedReturn(int equipmentId);
 
 signals:
     void dataChanged();
@@ -25,21 +26,17 @@ signals:
 private slots:
     void addRecord();
     void editRecord();
+    void startRecord();
+    void completeRecord();
     void exportData();
 
 private:
     void setupUi();
     void refreshEquipmentFilter();
     void populateTable();
+    void updateActionButtons();
 
     MaintenancePository m_repository;
     QList<MaintenanceLedgerItem> m_records;
-
-    QComboBox* m_equipmentFilter = nullptr;
-    QPushButton* m_addButton = nullptr;
-    QPushButton* m_editButton = nullptr;
-    QPushButton* m_refreshButton = nullptr;
-    QTableWidget* m_table = nullptr;
-    QLabel* m_statusLabel = nullptr;
-    QPushButton* m_exportButton = nullptr;
+    Ui::MaintenancePage* ui;
 };
