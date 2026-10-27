@@ -3,6 +3,7 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QVariant>
+#include <QSet>
 
 #include <algorithm>
 #include <cmath>
@@ -192,6 +193,77 @@ bool EquipmentRepository::add(Equipment& equipment)
 
     equipment.id = query.lastInsertId().toInt();
     equipment.status = LabAsset::EquipmentStatus::Available;
+    return true;
+}
+
+bool EquipmentRepository::addBatch(
+    QList<Equipment>& equipments,
+    QString& error)
+{
+    m_lastError.clear();
+    error.clear();
+    if (equipments.isEmpty()) {
+        error = "没有可导入的设备记录";
+        m_lastError = error;
+        return false;
+    }
+
+    QSet<QString> assetNumbers;
+    for (int index = 0; index < equipments.size(); ++index) {
+        Equipment& equipment = equipments[index];
+        if (!validate(equipment)) {
+            error = QString("第 %1 条记录：%2")
+                        .arg(index + 1)
+                        .arg(m_lastError);
+            m_lastError = error;
+            return false;
+        }
+        if (assetNumbers.contains(equipment.assetNo)) {
+            error = QString("第 %1 条记录：资产编号“%2”重复")
+                        .arg(index + 1)
+                        .arg(equipment.assetNo);
+            m_lastError = error;
+            return false;
+        }
+        assetNumbers.insert(equipment.assetNo);
+
+        if (assetNoExists(equipment.assetNo)) {
+            error = QString("第 %1 条记录：资产编号“%2”已存在")
+                        .arg(index + 1)
+                        .arg(equipment.assetNo);
+            m_lastError = error;
+            return false;
+        }
+        if (!m_lastError.isEmpty()) {
+            error = QString("第 %1 条记录：%2")
+                        .arg(index + 1)
+                        .arg(m_lastError);
+            m_lastError = error;
+            return false;
+        }
+    }
+
+    if (!m_db.transaction()) {
+        error = "启动批量导入事务失败：" + m_db.lastError().text();
+        m_lastError = error;
+        return false;
+    }
+    for (int index = 0; index < equipments.size(); ++index) {
+        if (!add(equipments[index])) {
+            error = QString("第 %1 条记录导入失败：%2")
+                        .arg(index + 1)
+                        .arg(m_lastError);
+            m_db.rollback();
+            m_lastError = error;
+            return false;
+        }
+    }
+    if (!m_db.commit()) {
+        error = "提交批量导入事务失败：" + m_db.lastError().text();
+        m_db.rollback();
+        m_lastError = error;
+        return false;
+    }
     return true;
 }
 

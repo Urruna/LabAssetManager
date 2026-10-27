@@ -172,6 +172,20 @@
       </spacer>
      </item>
      <item>
+      <widget class="QPushButton" name="btn_download_template">
+       <property name="text">
+        <string>下载模板</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btn_import_excel">
+       <property name="text">
+        <string>Excel 导入</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="btn_export_equipment">
        <property name="text">
         <string>导出</string>

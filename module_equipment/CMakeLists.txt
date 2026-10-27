@@ -3,6 +3,8 @@ add_library(module_equipment STATIC
     equipment.cpp
     equipmentrepository.h
     equipmentrepository.cpp
+    equipmentimporter.h
+    equipmentimporter.cpp
     equipmentdialog.h
     equipmentdialog.cpp
     equipmentpage.h
@@ -16,4 +18,5 @@ target_include_directories(module_equipment
 
 target_link_libraries(module_equipment
     PUBLIC common Qt6::Widgets Qt6::Sql
+    PRIVATE Qt6::GuiPrivate
 )

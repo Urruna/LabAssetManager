@@ -20,6 +20,7 @@ public:
     bool assetNoExists(const QString& assetNo, int excludedId = -1) const;
 
     bool add(Equipment& equipment);
+    bool addBatch(QList<Equipment>& equipments, QString& error);
     bool update(Equipment& equipment);
     bool remove(int id);
 

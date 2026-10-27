@@ -30,6 +30,8 @@ private slots:
     void addEquipment();
     void editEquipment();
     void deleteEquipment();
+    void importEquipment();
+    void downloadImportTemplate();
     void on_btn_export_equipment_clicked();
 
 private:

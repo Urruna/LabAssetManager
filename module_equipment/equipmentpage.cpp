@@ -2,6 +2,7 @@
 #include "equipmentpage.h"
 
 #include "equipmentdialog.h"
+#include "equipmentimporter.h"
 #include "equipmentrepository.h"
 #include "ui_equipmentpage.h"
 
@@ -120,6 +121,16 @@ EquipmentPage::EquipmentPage(QWidget* parent)
         &QPushButton::clicked,
         this,
         &EquipmentPage::deleteEquipment);
+    connect(
+        ui->btn_import_excel,
+        &QPushButton::clicked,
+        this,
+        &EquipmentPage::importEquipment);
+    connect(
+        ui->btn_download_template,
+        &QPushButton::clicked,
+        this,
+        &EquipmentPage::downloadImportTemplate);
     connect(
         ui->btn_refresh,
         &QPushButton::clicked,
@@ -350,4 +361,82 @@ void EquipmentPage::deleteEquipment()
 
     refreshData();
     emit dataChanged();
+}
+
+void EquipmentPage::importEquipment()
+{
+    const QString filePath = QFileDialog::getOpenFileName(
+        this,
+        "导入设备",
+        QString(),
+        "Excel 工作簿 (*.xlsx);;CSV 文件 (*.csv);;所有文件 (*.*)");
+    if (filePath.isEmpty()) {
+        return;
+    }
+
+    const EquipmentImportResult imported = EquipmentImporter::read(filePath);
+    if (!imported.error.isEmpty()) {
+        QMessageBox::warning(this, "导入失败", imported.error);
+        return;
+    }
+
+    const QString preview = QString("\n\n首条设备：%1 - %2")
+                                .arg(imported.equipments.first().assetNo)
+                                .arg(imported.equipments.first().name);
+    const QMessageBox::StandardButton answer = QMessageBox::question(
+        this,
+        "确认导入",
+        QString("已校验 %1 条设备记录，是否全部导入？\n"
+                "导入设备的初始状态均为“在用”。%2")
+            .arg(imported.equipments.size())
+            .arg(preview),
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::Yes);
+    if (answer != QMessageBox::Yes) {
+        return;
+    }
+
+    QList<Equipment> equipments = imported.equipments;
+    QString error;
+    EquipmentRepository repository;
+    if (!repository.addBatch(equipments, error)) {
+        QMessageBox::warning(
+            this,
+            "导入失败",
+            error + "\n\n本次没有写入任何设备。");
+        return;
+    }
+
+    refreshData();
+    emit dataChanged();
+    QMessageBox::information(
+        this,
+        "导入成功",
+        QString("已成功导入 %1 台设备。").arg(equipments.size()));
+}
+
+void EquipmentPage::downloadImportTemplate()
+{
+    QString filePath = QFileDialog::getSaveFileName(
+        this,
+        "保存设备导入模板",
+        "设备导入模板.csv",
+        "CSV 文件 (*.csv)");
+    if (filePath.isEmpty()) {
+        return;
+    }
+    if (!filePath.endsWith(".csv", Qt::CaseInsensitive)) {
+        filePath += ".csv";
+    }
+
+    QString error;
+    if (!EquipmentImporter::writeTemplate(filePath, error)) {
+        QMessageBox::warning(this, "保存失败", error);
+        return;
+    }
+    QMessageBox::information(
+        this,
+        "模板已保存",
+        "模板可直接使用 Excel 填写。\n"
+        "资产编号和设备名称为必填项，设备状态无需填写。");
 }
