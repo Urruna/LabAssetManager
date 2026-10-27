@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "module_borrow", "C:/test/LabAssetManagerFinal/module_borrow/module_borrow\module_borrow.vcxproj", "{8B19AF0C-8F44-36F9-82E9-664EF2F9A478}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testBorrow", "C:/test/LabAssetManagerFinal/module_borrow/testBorrow\testBorrow.vcxproj", "{7E730C02-A7E1-346F-8A74-E014999D5F25}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8B19AF0C-8F44-36F9-82E9-664EF2F9A478} = {8B19AF0C-8F44-36F9-82E9-664EF2F9A478}
+		{8B19AF0C-8F44-36F9-82E9-664EF2F9A478} = {8B19AF0C-8F44-36F9-82E9-664EF2F9A478}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8B19AF0C-8F44-36F9-82E9-664EF2F9A478}.Debug|x64.ActiveCfg = Debug|x64
+		{8B19AF0C-8F44-36F9-82E9-664EF2F9A478}.Debug|x64.Build.0 = Debug|x64
+		{8B19AF0C-8F44-36F9-82E9-664EF2F9A478}.Release|x64.ActiveCfg = Release|x64
+		{8B19AF0C-8F44-36F9-82E9-664EF2F9A478}.Release|x64.Build.0 = Release|x64
+		{7E730C02-A7E1-346F-8A74-E014999D5F25}.Debug|x64.ActiveCfg = Debug|x64
+		{7E730C02-A7E1-346F-8A74-E014999D5F25}.Debug|x64.Build.0 = Debug|x64
+		{7E730C02-A7E1-346F-8A74-E014999D5F25}.Release|x64.ActiveCfg = Release|x64
+		{7E730C02-A7E1-346F-8A74-E014999D5F25}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal
