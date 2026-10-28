@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <CommonLibDir>$(SolutionDir)..\commonlibdll\common</CommonLibDir>
+    <EquipmentLibDir>$(SolutionDir)..\commonlibdll\module_equipment</EquipmentLibDir>
+    <BorrowLibDir>$(SolutionDir)..\commonlibdll\module_borrow</BorrowLibDir>
+    <MaintenanceLibDir>$(SolutionDir)..\commonlibdll\module_maintenance</MaintenanceLibDir>
+    <ExportLibDir>$(SolutionDir)..\commonlibdll\module_statistics_export</ExportLibDir>
+    <LocalDebuggerEnvironment>PATH=$(QtBinDir);$(CommonLibDir)\bin;$(EquipmentLibDir)\bin;$(BorrowLibDir)\bin;$(MaintenanceLibDir)\bin;$(ExportLibDir)\bin;%PATH%</LocalDebuggerEnvironment>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>
+        $(CommonLibDir)\include;
+        $(EquipmentLibDir)\include;
+        $(BorrowLibDir)\include;
+        $(MaintenanceLibDir)\include;
+        $(ExportLibDir)\include;
+        %(AdditionalIncludeDirectories)
+      </AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>
+        $(CommonLibDir)\lib;
+        $(EquipmentLibDir)\lib;
+        $(BorrowLibDir)\lib;
+        $(MaintenanceLibDir)\lib;
+        $(ExportLibDir)\lib;
+        %(AdditionalLibraryDirectories)
+      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>
+        commond.lib;
+        module_equipmentd.lib;
+        module_borrowd.lib;
+        module_maintenanced.lib;
+        module_statistics_exportd.lib;
+        %(AdditionalDependencies)
+      </AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+</Project>

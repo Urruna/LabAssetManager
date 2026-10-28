@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # =========================
 # 编译输出目录 (VS CMake默认)
 # =========================
@@ -43,3 +44,17 @@ Thumbs.db
 *.sln.docstates
 
 自留.md
+=======
+**/debug/
+**/release/
+**/generated/
+**/obj/
+*.user
+*.suo
+*.VC.db
+*.VC.opendb
+**/moc_predefs.h
+**/moc_*.cpp
+**/moc_*.h
+**/ui_*.h
+>>>>>>>
